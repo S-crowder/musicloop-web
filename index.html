@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#111219">
+<title>Musicloop AI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: full-height phone app — compact top bar, one scrolling view, fixed bottom tab bar. Committed dark "stage" look for dim sanctuaries. */
+:root{
+  color-scheme: dark;
+  --bg:#111219; --panel:#1a1c26; --panel2:#222533; --line:#2c3040;
+  --fg:#efeae0; --muted:#9c99a8; --accent:#f3b545; --accent-ink:#1b1408;
+  --ok:#59d39a; --warn:#ff8a5c;
+  --c-click:#a7a3b3; --c-drums:#ff7a59; --c-bass:#9a86ff; --c-keys:#3cc7b4; --c-pad:#6fb2ff; --c-vox:#f3b545; --c-gtr:#e486c9; --c-full:#d9d4c7;
+  --f-display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body:"Figtree", "Segoe UI", Roboto, system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:14px; --nav-h:64px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--fg)}
+body{margin:0;font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.app{min-height:100%;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.top .in{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{font-family:var(--f-display);font-weight:800;font-size:20px;letter-spacing:-.02em}
+.brand span{color:var(--accent)}
+.status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.status.on i{background:var(--ok)}
+.status.warn i{background:var(--warn)}
+.acct{border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:6px 12px;min-height:36px;font-weight:600;font-size:13px;color:var(--fg);cursor:pointer;max-width:55vw}
+.acct span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.good{color:var(--ok);border-color:var(--ok)}
+main{flex:1;padding-block:14px calc(var(--nav-h) + 24px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:760px;width:100%;margin:0 auto}
+.view{display:grid;gap:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;min-width:0}
+.h{font-family:var(--f-display);font-weight:700;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--panel2);min-height:44px;padding:8px 14px;border-radius:12px;font-weight:600;cursor:pointer;font-size:15px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.sm{min-height:34px;padding:5px 11px;font-size:13px;border-radius:9px}
+.btn[disabled]{opacity:.45}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.chip b{color:var(--fg);font-family:var(--f-mono)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+
+/* Bottom nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.nav .in{display:grid;grid-template-columns:repeat(5,1fr);max-width:760px;margin:0 auto;height:var(--nav-h)}
+.nav button{border:0;background:none;display:grid;place-items:center;align-content:center;gap:3px;color:var(--muted);font-size:11.5px;min-width:0;font-weight:600;cursor:pointer}
+.nav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav button[aria-selected="true"]{color:var(--accent)}
+
+/* Live */
+.songhead{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.songhead .h{font-size:26px;line-height:1.1;overflow-wrap:anywhere}
+.clock{font-family:var(--f-mono);font-weight:700;font-size:20px;text-align:right;white-space:nowrap}
+.clock small{display:block;font-family:var(--f-body);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.timeline{margin-top:12px;border-radius:10px;overflow:hidden;background:var(--panel2);border:1px solid var(--line)}
+.timeline canvas{display:block;width:100%;height:72px}
+.transport{display:grid;grid-template-columns:1fr 2fr 1fr;gap:8px;margin-top:12px}
+.transport .play{min-height:60px;font-size:22px}
+.pads{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pad{min-height:68px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);text-align:left;padding:10px 12px;cursor:pointer;display:grid;align-content:space-between}
+.pad b{font-family:var(--f-mono);font-size:15px}
+.pad span{font-size:11px;color:var(--muted)}
+.pad.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--panel2))}
+.pad.queued{border:1.5px dashed var(--accent)}
+.toggles{display:grid;gap:10px;margin-top:12px}
+.switch{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px}
+.switch input{appearance:none;width:46px;height:28px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex:none;transition:background .15s}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--fg);transition:transform .15s}
+.switch input:checked{background:var(--accent)}
+.switch input:checked::after{transform:translateX(18px);background:var(--accent-ink)}
+.mixer{display:grid;gap:8px}
+.ch{display:grid;grid-template-columns:8px minmax(0,1fr) 44px 44px;gap:6px 10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.ch .dot{grid-row:1 / span 2;width:8px;align-self:stretch;border-radius:4px;background:var(--col)}
+.ch .name{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ch .fader{grid-column:2 / -1;display:flex;gap:10px;align-items:center}
+.ch input[type=range]{width:100%;accent-color:var(--col);height:28px}
+.ch .meter{width:40px;height:6px;border-radius:3px;background:var(--line);overflow:hidden;flex:none}
+.ch .meter i{display:block;height:100%;width:0;background:var(--col)}
+.ms{height:40px;border-radius:9px;border:1px solid var(--line);background:var(--panel);font-weight:700;font-family:var(--f-mono);cursor:pointer;color:var(--muted)}
+.ms.m[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:#1b0d06}
+.ms.s[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ch.silent .name,.ch.silent .fader{opacity:.45}
+
+/* Songs */
+.list{display:grid;gap:8px}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2)}
+.item.on{border-color:var(--accent)}
+.item .t{min-width:0;cursor:pointer}
+.item .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .t small{color:var(--muted);font-size:12px}
+.empty{text-align:center;padding:22px 12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted)}
+.empty b{display:block;color:var(--fg);font-family:var(--f-display);font-size:17px;margin-bottom:4px}
+
+/* Split */
+.field{display:grid;gap:4px;min-width:0}
+.field label{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+.field input,.field select,.field textarea{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0;min-height:44px}
+.field textarea{min-height:70px;resize:vertical}
+.drop{display:grid;place-items:center;text-align:center;gap:6px;min-height:180px;border:2px dashed var(--line);border-radius:var(--r);padding:22px 14px;background:var(--panel2);cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel2))}
+.drop svg{width:40px;height:40px;fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.drop b{font-family:var(--f-display);font-size:21px}
+.drop .fmts{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px}
+.drop .fmts .chip{font-family:var(--f-mono);font-size:11px;padding:2px 7px}
+.dropall{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(4px);pointer-events:none}
+.dropall div{border:3px dashed var(--accent);border-radius:20px;padding:40px 28px;text-align:center;max-width:calc(100% - 48px)}
+.dropall b{display:block;font-family:var(--f-display);font-size:28px}
+.queue{font-size:13px;color:var(--muted);margin-top:10px;overflow-wrap:anywhere}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:4px}
+.seg button{border:0;border-radius:9px;background:none;min-height:40px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.progress{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.note{font-size:13px;color:var(--muted);border-left:3px solid var(--line);padding-left:10px;margin:0}
+
+/* Swap */
+.post{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel2);display:grid;gap:6px}
+.post .title{font-family:var(--f-display);font-weight:700;font-size:17px}
+.post p{margin:0;overflow-wrap:anywhere}
+.contact{font-family:var(--f-mono);font-size:13px;user-select:all;overflow-wrap:anywhere}
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.checks label{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px;background:var(--panel2)}
+.checks input{accent-color:var(--accent)}
+details.share summary{list-style:none;cursor:pointer}
+details.share summary::-webkit-details-marker{display:none}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;font-size:14px;z-index:20;max-width:calc(100% - 32px);text-align:center}
+/* Transport, loop, tempo */
+.transport{grid-template-columns:60px minmax(0,1fr) 60px 60px!important}
+.transport .btn{min-height:60px;padding:0}
+.loopbtn{flex-direction:column;gap:1px;font-size:11px;border-radius:8px}
+.loopbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.loopbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tempo{display:grid;grid-template-columns:52px minmax(0,1fr) 52px 84px;gap:8px;align-items:center;margin-top:12px}
+.tempo .btn{min-height:52px;font-size:22px;padding:0}
+.tempo .tap{font-family:var(--f-mono);font-size:15px;letter-spacing:.08em}
+.tempo .tap.flash{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tval{text-align:center;min-width:0}
+.tval b{display:block;font-family:var(--f-mono);font-size:26px;line-height:1.1}
+.tval small{display:block;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seg3{grid-template-columns:repeat(3,1fr)}
+.seg3 button{font-size:13px}
+/* Setlist */
+.setbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.setbar .mid{min-width:0;text-align:center}
+.setbar .mid b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.setbar .mid small{color:var(--muted);font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.setbar .btn{min-width:52px}
+.setnote{margin-top:10px;font-size:14px;background:var(--panel2);border-left:3px solid var(--accent);border-radius:6px;padding:8px 10px;overflow-wrap:anywhere}
+.setpick{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
+.srows{display:grid;gap:8px;margin-top:12px}
+.srow{border:1px solid var(--line);border-radius:12px;background:var(--panel2);position:relative}
+.srow.on{border-color:var(--accent)}
+.srow.dragging{opacity:.55}
+.srow.drop-before::before,.srow.drop-after::after{content:"";position:absolute;left:8px;right:8px;height:3px;border-radius:2px;background:var(--accent)}
+.srow.drop-before::before{top:-6px}.srow.drop-after::after{bottom:-6px}
+.srow .main{display:grid;grid-template-columns:40px 26px minmax(0,1fr) 48px;align-items:center;gap:6px;padding:6px 8px 6px 0}
+.handle{height:48px;display:grid;place-items:center;color:var(--muted);cursor:grab;touch-action:none;font-size:20px;border:0;background:none}
+.srow .num{font-family:var(--f-mono);color:var(--muted);font-size:13px}
+.srow .info{min-width:0;cursor:pointer;padding-block:4px}
+.srow .info b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow .info small{display:block;color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow .info small.missing{color:var(--warn)}
+.srow .go{height:44px;border-radius:10px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:16px}
+.srow .edit{display:grid;gap:10px;padding:0 12px 12px}
+.pickrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.pickrow:first-child{border-top:0}
+.pickrow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pickrow small{color:var(--muted);font-size:12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top"><div class="in">
+    <div class="brand">Musicloop<span> AI</span></div>
+    <button class="status acct" id="acctBtn" aria-label="Account and device linking"><i></i><span>Log in</span></button>
+  </div></header>
+
+<main>
+<!-- LIVE -->
+<section class="view" id="v-live">
+  <div class="panel" id="setBar" hidden>
+    <div class="setbar">
+      <button class="btn" id="prevSong" aria-label="Previous song">◀</button>
+      <div class="mid"><b id="setPos">Song 1 of 1</b><small id="upNext">Up next: —</small></div>
+      <button class="btn" id="nextSong" aria-label="Next song">▶</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="songhead">
+      <div style="min-width:0">
+        <div class="eyebrow" id="songEyebrow">Example song</div>
+        <h1 class="h" id="songTitle">Morning Light</h1>
+      </div>
+      <div class="clock"><span id="clock">0:00</span><small id="clockSec">Intro</small></div>
+    </div>
+    <div class="meta" id="songMeta"></div>
+    <div class="setnote" id="setNote" hidden></div>
+    <div class="timeline" id="timeline"><canvas id="wave"></canvas></div>
+    <div class="transport">
+      <button class="btn" id="stopBtn" aria-label="Stop">■</button>
+      <button class="btn primary play" id="playBtn" aria-label="Play">▶</button>
+      <button class="btn loopbtn" id="loopBtn" aria-pressed="false" aria-label="Loop this section"><svg viewBox="0 0 24 24"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg><span>Loop</span></button>
+      <button class="btn" id="nextSec" aria-label="Next section">⏭</button>
+    </div>
+    <div class="tempo">
+      <button class="btn" id="tempoDown" aria-label="Slower by 1 BPM">−</button>
+      <div class="tval"><b id="tempoVal">72</b><small id="tempoOrig">BPM · original</small></div>
+      <button class="btn" id="tempoUp" aria-label="Faster by 1 BPM">+</button>
+      <button class="btn tap" id="tapBtn">TAP</button>
+    </div>
+    <div class="tempo">
+      <button class="btn" id="keyDown" aria-label="Down a half step">♭</button>
+      <div class="tval"><b id="keyVal">G</b><small id="keyOrig">Key · original</small></div>
+      <button class="btn" id="keyUp" aria-label="Up a half step">♯</button>
+      <button class="btn tap" id="keyReset" style="font-size:13px;letter-spacing:0">Key reset</button>
+    </div>
+    <div class="row between" style="margin-top:8px;flex-wrap:nowrap"><span class="muted" id="tempoStatus" style="font-size:13px;min-width:0">Original tempo and key.</span><button class="btn sm" id="tempoReset" style="flex:none">Tempo reset</button></div>
+  </div>
+  <div class="panel">
+    <div class="row between" style="margin-bottom:10px"><span class="eyebrow">Sections · tap to jump</span><span class="chip" id="loopChip" hidden>Looping this section</span></div>
+    <div class="pads" id="pads"></div>
+    <div class="field" style="margin-top:12px"><label>When I tap a section, switch</label>
+      <div class="seg seg3" id="jumpSeg" role="group" aria-label="Jump timing"><button data-m="now" aria-pressed="false">Right away</button><button data-m="bar" aria-pressed="false">End of bar</button><button data-m="section" aria-pressed="true">End of section</button></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="row between" style="margin-bottom:10px"><h2 class="h" style="font-size:19px">Mixer</h2><button class="btn sm" id="resetMix">Reset</button></div>
+    <div class="mixer" id="mixer"></div>
+  </div>
+</section>
+
+<!-- SETLIST -->
+<section class="view" id="v-sets" hidden>
+  <div class="panel">
+    <div class="setpick">
+      <div class="field"><label for="setPick">Setlist</label><select id="setPick"></select></div>
+      <button class="btn" id="setNew">New</button>
+    </div>
+    <div class="field" style="margin-top:10px"><label for="setName">Name</label><input id="setName" maxlength="60" placeholder="e.g. Sunday 9am"></div>
+    <div class="srows" id="setRows"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" id="setPlay">Start setlist</button>
+      <button class="btn" id="setAdd">Add songs</button>
+      <button class="btn" id="setSend" hidden>Send setlist to phone</button>
+    </div>
+    <div id="setPicker" hidden style="margin-top:12px">
+      <div class="eyebrow" style="margin-bottom:4px">Your songs</div>
+      <div id="pickList"></div>
+    </div>
+  </div>
+  <div class="panel">
+    <label class="switch">Load the next song when one ends <input type="checkbox" id="autoNext" checked></label>
+    <div class="row between" style="margin-top:14px"><span class="muted" style="font-size:13px">Remove this whole setlist</span><button class="btn sm" id="setDelete">Delete setlist</button></div>
+  </div>
+</section>
+
+<!-- SONGS -->
+<section class="view" id="v-songs" hidden>
+  <div class="panel">
+    <div class="row between"><h2 class="h" style="font-size:22px">Songs</h2><span class="chip" id="songCount">1 song</span></div>
+    <p class="muted" style="margin:4px 0 12px;font-size:14px">Songs you split are saved on this phone and play without internet.</p>
+    <div class="list" id="songList"></div>
+  </div>
+</section>
+
+<!-- IMPORT -->
+<section class="view" id="v-import" hidden>
+  <div class="panel">
+    <h2 class="h" style="font-size:22px">Import songs</h2>
+    <p class="muted" style="margin:4px 0 12px;font-size:14px">Bring in songs split on your laptop, or the stems of a song you already have.</p>
+    <label class="drop" for="impIn" id="impDrop">
+      <svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+      <b>Choose song files</b>
+      <span class="muted">Musicloop song files (.zip) from your laptop, a zip of stems, or the stem files of one song</span>
+      <span class="fmts"><span class="chip">ZIP</span><span class="chip">WAV</span><span class="chip">MP3</span><span class="chip">M4A</span><span class="chip">FLAC</span></span>
+    </label>
+    <input type="file" id="impIn" multiple hidden>
+  </div>
+  <div class="panel" id="impStems" hidden>
+    <div class="eyebrow">New song from stems</div>
+    <div class="field" style="margin-top:8px"><label for="impTitle">Song name</label><input id="impTitle" maxlength="60"></div>
+    <div class="grid2" style="margin-top:10px">
+      <div class="field"><label for="impKey">Key</label><select id="impKey"><option value="">Not sure</option><option>C</option><option>Db</option><option>D</option><option>Eb</option><option>E</option><option>F</option><option>F#</option><option>G</option><option>Ab</option><option>A</option><option>Bb</option><option>B</option><option>Am</option><option>Bm</option><option>C#m</option><option>Dm</option><option>Em</option><option>F#m</option><option>Gm</option></select></div>
+      <div class="field"><label for="impBpm">BPM</label><input id="impBpm" type="number" inputmode="numeric" min="40" max="240" placeholder="Not sure"></div>
+    </div>
+    <div class="eyebrow" style="margin-top:12px">Parts</div>
+    <div class="list" id="impParts" style="margin-top:6px"></div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="impGo">Import song</button><button class="btn" id="impCancel">Cancel</button></div>
+  </div>
+  <div class="panel" id="impLog" hidden aria-live="polite"></div>
+  <div class="panel">
+    <div class="eyebrow">Getting songs from your laptop</div>
+    <ol style="margin:8px 0 0;padding-left:20px;display:grid;gap:6px;font-size:14px">
+      <li>On the laptop's Musicloop webpage, tap <b>Send to phone</b> on a song or a whole setlist. It saves a .zip file.</li>
+      <li>Plug the phone into the laptop, choose <b>File transfer</b> on the phone, and drag the .zip into the phone's <b>Download</b> folder. (Or use Quick Share, Google Drive or email.)</li>
+      <li>Tap <b>Choose song files</b> above and pick it.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- SPLIT -->
+<section class="view" id="v-split" hidden>
+  <div class="panel">
+    <h2 class="h" style="font-size:22px">Split a song</h2>
+    <p class="muted" style="margin:4px 0 12px;font-size:14px">Drop in recordings. Musicloop pulls each one into stems and saves it to your Songs.</p>
+    <div class="seg" role="group" aria-label="Split method">
+      <button id="mAI" aria-pressed="false">AI Split</button>
+      <button id="mQuick" aria-pressed="true">Quick Split</button>
+    </div>
+    <p class="note" id="modeNote" style="margin-top:10px">Quick Split runs on this phone in seconds. Good for rehearsal.</p>
+    <label class="drop" id="dropZone" for="fileIn" style="margin-top:12px">
+      <svg viewBox="0 0 24 24"><path d="M12 15V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+      <b>Drop songs here</b>
+      <span class="muted">or tap here to browse. Add a whole set at once.</span>
+      <span class="fmts"><span class="chip">WAV</span><span class="chip">MP3</span><span class="chip">M4A</span><span class="chip">AAC</span><span class="chip">FLAC</span><span class="chip">OGG</span><span class="chip">AIFF</span></span>
+    </label>
+    <input type="file" id="fileIn" accept="audio/*,.wav,.mp3,.m4a,.aac,.flac,.ogg,.opus,.aif,.aiff,.wma" multiple hidden>
+  </div>
+  <div class="panel" id="jobPanel" hidden>
+    <div class="eyebrow" id="jobStatus">Starting…</div>
+    <h3 class="h" style="font-size:18px;margin:4px 0 10px" id="jobName"></h3>
+    <div class="progress"><i id="jobBar"></i></div>
+    <div class="queue" id="queueInfo" hidden></div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="openSplit" hidden>Open in Live</button><button class="btn" id="sendSplit" hidden>Send to phone</button></div>
+  </div>
+  <div class="panel"><div class="row between" style="flex-wrap:nowrap"><p class="note" style="margin:0">Already have stems from Moises, Loop Community or MultiTracks? Bring them in as one song.</p><button class="btn sm" id="goImport" style="flex:none">Import stems</button></div></div>
+  <div class="panel"><div class="row between" style="flex-wrap:nowrap"><p class="note" style="margin:0">AI Split, Track Swap and device linking use your Musicloop server.</p><button class="btn sm" id="goAcct" style="flex:none">Server setup</button></div></div>
+</section>
+
+<!-- ACCOUNT -->
+<section class="view" id="v-account" hidden>
+  <div class="panel" id="claudeNote" hidden>
+    <div class="eyebrow">Linking your laptop</div>
+    <p style="margin:6px 0 0">This copy runs inside Claude, which can't reach your Musicloop server, so it can't log in. To link your laptop and phone, start the Musicloop server and open its address in your laptop's browser, for example <span class="mono">http://localhost:8000</span>. Log in there and in the phone app with the same account.</p>
+  </div>
+  <div class="panel" id="phoneConnect" hidden>
+    <div class="eyebrow">Connect your phone</div>
+    <p style="margin:6px 0 0">Open the Musicloop app on your phone, tap <b>Log in</b>, then <b>Find my server</b>. Or type this address:</p>
+    <div class="mono" id="phoneAddr" style="font-size:22px;font-weight:700;margin-top:8px;overflow-wrap:anywhere;user-select:all"></div>
+    <p class="muted" style="font-size:13px;margin:8px 0 0">Your phone needs to be on the same Wi-Fi as this computer.</p>
+  </div>
+  <div class="panel" id="acctOut">
+    <h2 class="h" style="font-size:22px">Link your phone and laptop</h2>
+    <p class="muted" style="margin:4px 0 12px;font-size:14px">Log in with the same account on each device. Songs, setlists, tempo and key changes sync on their own.</p>
+    <div class="seg" role="group" aria-label="Log in or create an account"><button id="tLogin" type="button" aria-pressed="true">Log in</button><button id="tSignup" type="button" aria-pressed="false">Create account</button></div>
+    <form id="authForm" style="display:grid;gap:10px;margin-top:12px">
+      <div class="field" id="nameField" hidden><label for="fName">Your name</label><input id="fName" maxlength="60" autocomplete="name"></div>
+      <div class="field"><label for="fEmail">Email</label><input id="fEmail" type="email" required maxlength="200" autocomplete="email" autocapitalize="off" autocorrect="off"></div>
+      <div class="field"><label for="fPass">Password</label><input id="fPass" type="password" required minlength="8" maxlength="200" autocomplete="current-password"></div>
+      <button class="btn primary" id="authSubmit" type="submit">Log in</button>
+      <p class="note" id="authMsg" aria-live="polite" hidden></p>
+    </form>
+  </div>
+  <div class="panel" id="acctIn" hidden>
+    <div class="eyebrow">Logged in</div>
+    <h2 class="h" style="font-size:22px;margin-top:4px;overflow-wrap:anywhere" id="acctName"></h2>
+    <div class="muted" id="acctEmail" style="font-size:14px;overflow-wrap:anywhere"></div>
+    <p class="note" style="margin-top:12px">This device is linked. Songs, setlists, tempo and key changes show up on every device logged in to this account.</p>
+    <p id="syncInfo" style="margin:12px 0 0;font-size:14px">Not synced yet</p>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="syncBtn">Sync now</button><button class="btn" id="logoutBtn">Log out</button></div>
+    <p class="muted" style="font-size:13px;margin:10px 0 0">Logging out stops syncing on this device. Songs already here stay here.</p>
+  </div>
+  <div class="panel">
+    <div class="row between"><div class="eyebrow">Musicloop server</div><span class="chip" id="srvState">Not set up</span></div>
+    <div class="field" style="margin-top:8px"><label for="srvUrl">Server address</label><input id="srvUrl" inputmode="url" autocapitalize="off" autocorrect="off" placeholder="http://192.168.1.20:8000"></div>
+    <div class="row" style="margin-top:10px"><button class="btn primary" id="srvFind">Find my server</button><button class="btn" id="srvSave">Save and test</button></div>
+    <p class="muted" id="srvMsg" style="font-size:13px;margin:8px 0 0" aria-live="polite"></p>
+    <p class="note" style="margin-top:10px">The computer running the Musicloop server. It handles accounts, AI Split and Track Swap. Your phone and laptop both need to reach it: same Wi-Fi at home or church, or host it online to link from anywhere.</p>
+  </div>
+</section>
+
+<!-- SWAP -->
+<section class="view" id="v-swap" hidden>
+  <div class="panel">
+    <div class="row between"><h2 class="h" style="font-size:22px">Track Swap</h2><button class="btn sm" id="swapRefresh">Refresh</button></div>
+    <p class="muted" style="margin:4px 0 10px;font-size:14px">Arrangements other churches have stems for. Reach out to trade.</p>
+    <div class="field"><input id="swapSearch" type="search" placeholder="Search song, church, key" aria-label="Search"></div>
+    <div class="list" id="swapFeed" style="margin-top:10px"></div>
+  </div>
+  <details class="panel share" id="shareBox">
+    <summary class="row between"><h2 class="h" style="font-size:19px">Share an arrangement</h2><span class="btn sm">Open</span></summary>
+    <form id="swapForm" style="display:grid;gap:10px;margin-top:12px" autocomplete="off">
+      <div class="field"><label for="fSong">Song</label><input id="fSong" required maxlength="80"></div>
+      <div class="grid2">
+        <div class="field"><label for="fArtist">Artist</label><input id="fArtist" maxlength="60"></div>
+        <div class="field"><label for="fCcli">CCLI song #</label><input id="fCcli" inputmode="numeric" maxlength="10"></div>
+        <div class="field"><label for="fKey">Key</label><select id="fKey"><option>C</option><option>Db</option><option>D</option><option>Eb</option><option>E</option><option>F</option><option>F#</option><option selected>G</option><option>Ab</option><option>A</option><option>Bb</option><option>B</option></select></div>
+        <div class="field"><label for="fBpm">BPM</label><input id="fBpm" type="number" inputmode="numeric" min="40" max="220" value="72"></div>
+      </div>
+      <div class="field"><label>Stems you have</label><div class="checks" id="fStems">
+        <label><input type="checkbox" value="Click" checked>Click</label><label><input type="checkbox" value="Guide" checked>Guide</label>
+        <label><input type="checkbox" value="Drums">Drums</label><label><input type="checkbox" value="Bass">Bass</label>
+        <label><input type="checkbox" value="Keys">Keys</label><label><input type="checkbox" value="Pad" checked>Pad</label>
+        <label><input type="checkbox" value="EG">Electric gtr</label><label><input type="checkbox" value="AG">Acoustic gtr</label><label><input type="checkbox" value="BGVs">BGVs</label>
+      </div></div>
+      <div class="field"><label for="fChurch">Church</label><input id="fChurch" required maxlength="60"></div>
+      <div class="field"><label for="fContact">How to reach you</label><input id="fContact" required maxlength="80" placeholder="Email or phone"></div>
+      <div class="field"><label for="fNote">Arrangement notes</label><textarea id="fNote" maxlength="400" placeholder="e.g. Down to G, bridge x4, tag at the end"></textarea></div>
+      <button class="btn primary" type="submit" id="postBtn">Share arrangement</button>
+    </form>
+  </details>
+</section>
+</main>
+
+<nav class="nav" aria-label="Main"><div class="in" role="tablist">
+  <button role="tab" data-v="live" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M4 14v-4M8 18V6M12 15V9M16 20V4M20 14v-4"/></svg>Live</button>
+  <button role="tab" data-v="sets" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>Setlist</button>
+  <button role="tab" data-v="songs" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>Songs</button>
+  <button role="tab" data-v="import" aria-selected="false" hidden><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 18h16"/></svg>Import</button>
+  <button role="tab" data-v="split" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M12 3v6M12 9 5 15M12 9l7 6M12 9v12"/><circle cx="12" cy="3" r="1"/></svg>Split</button>
+  <button role="tab" data-v="swap" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg>Swap</button>
+</div></nav>
+</div>
+<div class="toast" id="toast" hidden></div>
+<div class="dropall" id="dropAll" hidden><div><b>Drop to split</b><span class="muted">WAV, MP3, M4A, AAC, FLAC, OGG or AIFF</span></div></div>
+
+<script>
+(() => {
+"use strict";
+const $=s=>document.querySelector(s);
+const toast=m=>{const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2800);};
+const IS_PHONE=!!window.Capacitor; // the Android app: plays and imports, never splits
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const syncState=(()=>{ const j=(k,d)=>{ try{ const v=JSON.parse(store.get(k)||""); return v==null?d:v; }catch(e){ return d; } };
+  return {dirty:new Set(j("ml-dirty",[])), sig:j("ml-sig",{}), tomb:j("ml-tomb",{}), prefUpdated:+(store.get("ml-pref-upd")||0)}; })();
+function saveSync(){ store.set("ml-dirty",JSON.stringify([...syncState.dirty])); store.set("ml-sig",JSON.stringify(syncState.sig)); store.set("ml-tomb",JSON.stringify(syncState.tomb)); store.set("ml-pref-upd",String(syncState.prefUpdated)); }
+function sigOf(x){ return JSON.stringify({n:x.name,i:x.items}); }
+function markDirty(key){ syncState.dirty.add(key); saveSync(); kickSync(); }
+const fmt=t=>{t=Math.max(0,t||0);return Math.floor(t/60)+":"+String(Math.floor(t%60)).padStart(2,"0");};
+const cssVar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+const COLORS={BGVs:"--c-vox",Percussion:"--c-drums","Acoustic gtr":"--c-gtr","Electric gtr":"--c-gtr",Guide:"--c-click",Other:"--c-full",Strings:"--c-pad",Click:"--c-click",Drums:"--c-drums","Drums & cymbals":"--c-drums",Bass:"--c-bass",Keys:"--c-keys",Pad:"--c-pad","Pads & other":"--c-pad","Lead Vox":"--c-vox",Vocals:"--c-vox",Guitars:"--c-gtr","Guitars & keys":"--c-keys","Original mix":"--c-full"};
+
+/* ---------- Tabs ---------- */
+function showView(v){
+  document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===v));
+  if(IS_PHONE&&v==="split") v="import";
+  ["live","sets","songs","import","split","swap","account"].forEach(k=>$("#v-"+k).hidden=k!==v);
+  store.set("ml-tab",v); window.scrollTo(0,0);
+  if(v==="live") requestAnimationFrame(drawWave);
+  if(v==="swap") loadSwaps();
+  if(v==="sets") renderSets();
+}
+document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.v)));
+
+/* ---------- Saved songs (IndexedDB) ---------- */
+const idb={db:null,
+  open(){return new Promise(res=>{try{const r=indexedDB.open("musicloop",1);r.onupgradeneeded=()=>r.result.createObjectStore("songs",{keyPath:"id"});r.onsuccess=()=>{this.db=r.result;res(true)};r.onerror=()=>res(false);}catch(e){res(false)}});},
+  tx(mode){return this.db.transaction("songs",mode).objectStore("songs");},
+  all(){return new Promise(res=>{if(!this.db)return res([]);const r=this.tx("readonly").getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>res([]);});},
+  put(o){return new Promise((res,rej)=>{if(!this.db)return rej(new Error("no db"));const r=this.tx("readwrite").put(o);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});},
+  del(id){return new Promise(res=>{if(!this.db)return res();const r=this.tx("readwrite").delete(id);r.onsuccess=r.onerror=()=>res();});}
+};
+
+/* ---------- Audio ---------- */
+let ctx=null,master=null;
+function ac(){ if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=.9;master.connect(ctx.destination);} return ctx; }
+
+function makeExampleSong(){
+  const SR=16000,bpm=72,beat=60/bpm,bar=beat*4;
+  const sections=[["Intro",2],["Verse 1",4],["Chorus",4],["Bridge",2],["Chorus",4],["Outro",2]];
+  const prog={norm:[[43,[55,59,62]],[38,[57,62,66]],[40,[55,59,64]],[36,[55,60,64]]],bridge:[[36,[55,60,64]],[38,[57,62,66]],[40,[55,59,64]],[38,[57,62,66]]]};
+  const totalBars=sections.reduce((a,s)=>a+s[1],0),len=Math.ceil(totalBars*bar*SR)+SR,mk=()=>new Float32Array(len);
+  const st={Click:mk(),Drums:mk(),Bass:mk(),Keys:mk(),Pad:mk(),"Lead Vox":mk()};
+  let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647*2-1;};
+  function tone(a,t0,dur,f,amp,{atk=.01,rel=.1,harm=[1],vib=0}={}){const s0=Math.floor(t0*SR),n=Math.floor((dur+rel)*SR);
+    for(let i=0;i<n&&s0+i<a.length;i++){const t=i/SR,env=t<atk?t/atk:(t<dur?1:Math.max(0,1-(t-dur)/rel));const ff=f*(1+vib*Math.sin(2*Math.PI*5.2*t)*Math.min(1,t/.3));let v=0;for(let h=0;h<harm.length;h++)v+=harm[h]*Math.sin(2*Math.PI*ff*(h+1)*t);a[s0+i]+=v*amp*env;}}
+  function hit(a,t0,dur,amp,kind){const s0=Math.floor(t0*SR),n=Math.floor(dur*SR);let prev=0;
+    for(let i=0;i<n&&s0+i<a.length;i++){const t=i/SR,env=Math.exp(-t/(dur/5));
+      if(kind==="kick"){const f=45+80*Math.exp(-t*30);a[s0+i]+=Math.sin(2*Math.PI*f*t)*amp*env;}
+      else if(kind==="snare"){a[s0+i]+=(rnd()*.7+Math.sin(2*Math.PI*190*t)*.4)*amp*env;}
+      else{const nz=rnd();a[s0+i]+=(nz-prev)*amp*env;prev=nz;}}}
+  const melody={"Verse 1":[[0,67,1],[1,69,1],[2,71,2],[4,71,1],[5,69,1],[6,67,2],[8,64,1.5],[9.5,67,.5],[10,69,2],[12,67,1],[13,64,1],[14,62,2]],
+    "Chorus":[[0,74,1.5],[1.5,74,.5],[2,71,2],[4,74,1],[5,76,1],[6,74,2],[8,71,1.5],[9.5,69,.5],[10,71,2],[12,67,1],[13,69,1],[14,67,2]]};
+  const secs=[];let b0=0;
+  sections.forEach(([name,bars])=>{secs.push({name,start:b0*bar,end:(b0+bars)*bar,bars});
+    for(let b=0;b<bars;b++){const t=(b0+b)*bar,pr=name==="Bridge"?prog.bridge:prog.norm,[root,triad]=pr[b%4],full=name!=="Intro"&&name!=="Outro";
+      for(let k=0;k<4;k++)tone(st.Click,t+k*beat,.025,k===0?1600:1100,.5,{atk:.001,rel:.02});
+      for(let e=0;e<8;e++)hit(st.Drums,t+e*beat/2,.06,full?.18:.12,"hat");
+      if(full){hit(st.Drums,t,.35,.9,"kick");hit(st.Drums,t+2*beat,.35,.9,"kick");hit(st.Drums,t+2.5*beat,.25,.5,"kick");hit(st.Drums,t+beat,.25,.45,"snare");hit(st.Drums,t+3*beat,.25,.45,"snare");}
+      if(name!=="Intro"){tone(st.Bass,t,beat*1.8,mtof(root),.5,{harm:[1,.35,.1],rel:.08});tone(st.Bass,t+2*beat,beat*1.8,mtof(root),.45,{harm:[1,.35,.1],rel:.08});}
+      triad.forEach(m=>{tone(st.Pad,t,bar,mtof(m),.11,{atk:.6,rel:.6,harm:[1,.2]});tone(st.Pad,t,bar,mtof(m)*1.004,.06,{atk:.6,rel:.6});});
+      [triad[0],triad[1],triad[2],triad[1]+12,triad[2],triad[1],triad[0]+12,triad[2]].forEach((m,i)=>tone(st.Keys,t+i*beat/2,beat/2*.9,mtof(m),full?.16:.12,{atk:.005,rel:.25,harm:[1,.5,.25,.12]}));
+      const mel=melody[name];if(mel){const q=b%4;mel.filter(n=>Math.floor(n[0]/4)===q).forEach(([bt,m,d])=>tone(st["Lead Vox"],t+(bt-q*4)*beat,d*beat*.95,mtof(m),.2,{atk:.05,rel:.15,harm:[1,.6,.3,.15,.08],vib:.006}));}
+    } b0+=bars;});
+  const stems=Object.entries(st).map(([name,arr])=>{let pk=0;for(let i=0;i<arr.length;i++)pk=Math.max(pk,Math.abs(arr[i]));const g=pk?.8/pk:1;for(let i=0;i<arr.length;i++)arr[i]*=g;
+    const buf=new AudioBuffer({length:len,numberOfChannels:1,sampleRate:SR});buf.copyToChannel(arr,0);return{name,buffer:buf,vol:name==="Click"?.7:.8,mute:false,solo:false};});
+  return {id:"example",title:"Morning Light",artist:"Example song",key:"G",bpm,sig:"4/4",example:true,duration:totalBars*bar,bar,sections:secs,stems};
+}
+
+/* ---------- Engine ---------- */
+const eng={song:null,sources:[],gains:[],analysers:[],startedAt:0,offset:0,playing:false,loop:null,loopOn:false,queued:null,pend:null,wake:null,setIdx:null};
+let jumpMode=store.get("ml-jump")||"section";
+function commitPend(){ if(eng.pend&&ctx&&ctx.currentTime>=eng.pend.when){ const p=eng.pend; eng.pend=null; eng.sources=p.srcs; eng.startedAt=p.startedAt; eng.loop=p.loop; eng.queued=null; renderPads(); } }
+function curPos(){ if(!eng.playing) return eng.offset; commitPend(); let p=ctx.currentTime-eng.startedAt;
+  if(eng.loop){const L=eng.loop.end-eng.loop.start;if(p>eng.loop.end)p=eng.loop.start+((p-eng.loop.start)%L);} return Math.max(0,Math.min(p,eng.song.duration)); }
+function buildGraph(){ const c=ac(); eng.gains.forEach(g=>g.disconnect()); eng.gains=[]; eng.analysers=[];
+  eng.song.stems.forEach(()=>{const g=c.createGain(),an=c.createAnalyser();an.fftSize=256;g.connect(an);g.connect(master);eng.gains.push(g);eng.analysers.push(an);}); applyMix(); }
+function applyMix(){ if(!eng.gains.length) return; const anySolo=eng.song.stems.some(s=>s.solo);
+  eng.song.stems.forEach((s,i)=>{const on=!s.mute&&(!anySolo||s.solo);eng.gains[i].gain.setTargetAtTime(on?s.vol*s.vol:0,ctx.currentTime,.02);
+    const r=document.querySelector(`.ch[data-i="${i}"]`);if(r)r.classList.toggle("silent",!on);}); }
+const killAll=arr=>arr.forEach(s=>{try{s.stop()}catch(e){}});
+function stopSources(){ killAll(eng.sources); eng.sources=[]; if(eng.pend){ killAll(eng.pend.srcs); eng.pend=null; } }
+function makeSources(pos,when,loop){ const arr=[];
+  eng.song.stems.forEach((s,i)=>{ const src=ctx.createBufferSource(); src.buffer=s.buffer;
+    if(loop){ src.loop=true; src.loopStart=loop.start; src.loopEnd=loop.end; }
+    src.connect(eng.gains[i]); src.start(when,Math.max(0,Math.min(pos,s.buffer.duration-.01))); arr.push(src); }); return arr; }
+async function wake(on){ try{ if(on&&!eng.wake&&navigator.wakeLock) eng.wake=await navigator.wakeLock.request("screen"); else if(!on&&eng.wake){ await eng.wake.release(); eng.wake=null; } }catch(e){} }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&eng.playing){ eng.wake=null; wake(true); } });
+function setPlayBtn(on){ $("#playBtn").textContent=on?"❚❚":"▶"; $("#playBtn").setAttribute("aria-label",on?"Pause":"Play"); }
+function secRegion(i){ const x=eng.song.sections[i]; return {start:x.start,end:x.end}; }
+function startAt(pos){ const c=ac(); c.resume(); if(!eng.gains.length) buildGraph(); stopSources();
+  const when=c.currentTime+.03; eng.loop=eng.loopOn?secRegion(secAt(pos)):null;
+  eng.sources=makeSources(pos,when,eng.loop); eng.startedAt=when-pos; eng.playing=true; eng.queued=null; setPlayBtn(true); wake(true); renderPads(); }
+function pause(){ if(!eng.playing) return; eng.offset=curPos(); stopSources(); eng.playing=false; eng.queued=null; setPlayBtn(false); wake(false); renderPads(); }
+function stop(){ pause(); eng.offset=0; renderPads(); tick(); }
+function secAt(p){ const S=eng.song.sections; for(let i=S.length-1;i>=0;i--) if(p>=S[i].start-1e-3) return i; return 0; }
+/* Loop: turning it on lets the section finish, then repeats it. Turning it off lets the song carry on. */
+function setLoopOn(on){ eng.loopOn=on; $("#loopBtn").setAttribute("aria-pressed",on); $("#loopChip").hidden=!on;
+  if(!eng.song) return;
+  if(!eng.playing){ eng.loop=null; return; }
+  commitPend();
+  if(on){ const r=secRegion(secAt(curPos())); eng.loop=r; eng.sources.forEach(x=>{x.loopStart=r.start;x.loopEnd=r.end;x.loop=true;}); }
+  else { const p=curPos(); eng.sources.forEach(x=>x.loop=false); eng.loop=null; eng.startedAt=ctx.currentTime-p; }
+  if(eng.pend){ const r=on?secRegion(eng.pend.idx):null; eng.pend.loop=r; eng.pend.srcs.forEach(x=>{ if(r){x.loopStart=r.start;x.loopEnd=r.end;} x.loop=!!r; }); }
+}
+$("#loopBtn").addEventListener("click",()=>{ setLoopOn(!eng.loopOn); if(eng.loopOn&&eng.playing) toast("Loops when this section ends"); });
+/* Section jumps happen right away, at the next bar, or when the current section ends. Timing is sample-accurate. */
+function jumpTo(i){ const sec=eng.song.sections[i]; if(!sec) return;
+  if(!eng.playing){ eng.offset=sec.start; tick(); renderPads(); return; }
+  const mode=jumpMode==="bar"&&!eng.song.bar?"section":jumpMode;
+  if(mode==="now"){ startAt(sec.start); return; }
+  commitPend();
+  let when;
+  if(eng.pend){ killAll(eng.pend.srcs); when=eng.pend.when; }
+  else {
+    const p=curPos(), end=eng.loop?eng.loop.end:eng.song.sections[secAt(p)].end;
+    let boundary = mode==="bar" ? Math.min(Math.ceil((p+.05)/eng.song.bar)*eng.song.bar, end) : end;
+    when=ctx.currentTime+Math.max(.03,boundary-p);
+    eng.sources.forEach(x=>{try{x.stop(when)}catch(e){}});
+  }
+  const loop=eng.loopOn?secRegion(i):null;
+  eng.pend={when,srcs:makeSources(sec.start,when,loop),startedAt:when-sec.start,loop,idx:i}; eng.queued=i; renderPads();
+}
+function renderJumpSeg(){ document.querySelectorAll("#jumpSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===jumpMode)); }
+document.querySelectorAll("#jumpSeg button").forEach(b=>b.addEventListener("click",()=>{ jumpMode=b.dataset.m; store.set("ml-jump",jumpMode); renderJumpSeg(); }));
+renderJumpSeg();
+$("#playBtn").addEventListener("click",()=>{ if(eng.playing) pause(); else { if(eng.offset>=eng.song.duration-.1) eng.offset=0; startAt(eng.offset); } });
+$("#stopBtn").addEventListener("click",stop);
+$("#nextSec").addEventListener("click",()=>{ const base=eng.queued!=null?eng.queued:secAt(curPos()); jumpTo(Math.min(eng.song.sections.length-1,base+1)); });
+
+/* ---------- Tempo: tap, nudge, and time-stretch that keeps the key ---------- */
+let tempoMap={}; try{ tempoMap=JSON.parse(store.get("ml-tempo")||"{}")||{}; }catch(e){ tempoMap={}; }
+const saveTempo=()=>{ store.set("ml-tempo",JSON.stringify(tempoMap)); syncState.prefUpdated=Date.now(); markDirty("pref:tempo"); };
+function prep(x){ if(x.origStems) return;
+  x.origBpm=typeof x.bpmExact==="number"?x.bpmExact:(typeof x.bpm==="number"?x.bpm:null);
+  const t=tempoMap[x.id]; if(!x.origBpm&&t&&t.orig){ x.origBpm=t.orig; x.bpm=Math.round(t.orig); x.bar=240/t.orig; }
+  x.origBar=x.bar; x.origSections=x.sections.map(z=>Object.assign({},z)); x.origDuration=x.duration; x.origStems=x.stems.map(z=>z.buffer); x.rate=1; x.targetBpm=x.origBpm; x.origKey=x.key&&x.key!=="—"?x.key:null; x.semis=0; x.targetSemis=0; }
+function applyTiming(x){ const r=x.rate; x.sections=x.origSections.map(z=>Object.assign({},z,{start:z.start/r,end:z.end/r})); x.duration=x.origDuration/r; x.bar=x.origBar?x.origBar/r:null; x._pk=null; }
+const yieldUI=()=>new Promise(r=>setTimeout(r,0));
+async function stretchBuffers(bufs,rate,onProg){
+  const sr=bufs[0].sampleRate, len=Math.max(...bufs.map(b=>b.length));
+  const N=sr>30000?2048:1024, Hs=N/2, Ha=Hs*rate, D=4, tolD=N/(4*D), LD=N/(4*D);
+  const gl=Math.ceil(len/D)+1, g=new Float32Array(gl);
+  bufs.forEach(b=>{ for(let ch=0;ch<b.numberOfChannels;ch++){ const d=b.getChannelData(ch); for(let i=0,j=0;i<d.length;i+=D,j++) g[j]+=d[i]; } });
+  const outLen=Math.floor(len/rate), frames=Math.max(1,Math.ceil(outLen/Hs)), pos=new Int32Array(frames), maxStart=Math.max(0,len-N);
+  let prev=0;
+  for(let k=1;k<frames;k++){   // one shared alignment for all stems keeps them in sync
+    const nominal=Math.round(k*Ha), natD=Math.floor((prev+Hs)/D), nomD=Math.floor(nominal/D);
+    let best=nominal, bestC=-Infinity;
+    if(natD+LD<gl){ for(let dl=-tolD;dl<=tolD;dl++){ const c0=nomD+dl; if(c0<0||c0+LD>=gl) continue; let c=0; for(let m=0;m<LD;m+=2) c+=g[natD+m]*g[c0+m]; if(c>bestC){bestC=c;best=c0*D;} } }
+    pos[k]=Math.min(maxStart,Math.max(0,best)); prev=pos[k];
+    if(k%500===0){ onProg&&onProg(.5*k/frames); await yieldUI(); }
+  }
+  const win=new Float32Array(N); for(let i=0;i<N;i++) win[i]=.5-.5*Math.cos(2*Math.PI*i/N);
+  const out=[];
+  for(let bi=0;bi<bufs.length;bi++){ const b=bufs[bi], nb=new AudioBuffer({length:Math.max(1,outLen),numberOfChannels:b.numberOfChannels,sampleRate:sr});
+    for(let ch=0;ch<b.numberOfChannels;ch++){ const d=b.getChannelData(ch), o=new Float32Array(Math.max(1,outLen));
+      for(let k=0;k<frames;k++){ const p0=pos[k], q=k*Hs;
+        for(let i=0;i<N;i++){ const oi=q+i, si=p0+i; if(oi>=outLen||si>=d.length) break; o[oi]+=d[si]*(k===0&&i<Hs?1:win[i]); } }
+      nb.copyToChannel(o,ch); }
+    out.push(nb); onProg&&onProg(.5+.5*(bi+1)/bufs.length); await yieldUI(); }
+  return out; }
+let tempoJob=0;
+function renderTempo(){ const x=eng.song; if(!x) return; const known=!!x.origBpm;
+  $("#tempoVal").textContent=known?Math.round(x.targetBpm):"—";
+  $("#tempoOrig").textContent=!known?"BPM · tap to set":(Math.round(x.targetBpm)===Math.round(x.origBpm)?"BPM · original":"BPM · original "+Math.round(x.origBpm));
+  $("#tempoDown").disabled=$("#tempoUp").disabled=!known; $("#tempoReset").disabled=!known||Math.abs(x.targetBpm-x.origBpm)<.05;
+  const n=x.targetSemis||0;
+  $("#keyVal").textContent=x.origKey&&parseKey(x.origKey)?keyName(x.origKey,n):(n>0?"+"+n:String(n));
+  $("#keyOrig").textContent=n===0?"Key · original":(x.origKey&&parseKey(x.origKey)?`Key · ${n>0?"up":"down"} ${Math.abs(n)} · was ${x.origKey}`:`Half steps ${n>0?"up":"down"}`);
+  $("#keyDown").disabled=n<=-6; $("#keyUp").disabled=n>=6; $("#keyReset").disabled=n===0; }
+/* Keys */
+const NOTES=["C","Db","D","Eb","E","F","F#","G","Ab","A","Bb","B"], ALIAS={"C#":"Db","D#":"Eb","Gb":"F#","G#":"Ab","A#":"Bb","Cb":"B","Fb":"E","E#":"F","B#":"C"};
+function parseKey(k){ if(!k||typeof k!=="string") return null; const m=k.trim().match(/^([A-Ga-g])([#b]?)\s*(m|min|minor)?$/); if(!m) return null;
+  let r=m[1].toUpperCase()+m[2]; r=ALIAS[r]||r; const i=NOTES.indexOf(r); return i<0?null:{i,minor:!!m[3]}; }
+function keyName(k,n){ const q=parseKey(k); if(!q) return k; const nm=NOTES[((q.i+n)%12+12)%12]; return q.minor?(({Db:"C#",Ab:"G#"})[nm]||nm)+"m":nm; }
+function semisBetween(from,to){ const a=parseKey(from), b=parseKey(to); if(!a||!b) return null; let d=((b.i-a.i)%12+12)%12; if(d>6) d-=12; return d; }
+function scheduleProcess(x,delay){ $("#tempoStatus").textContent="Getting ready…"; clearTimeout(eng._tt); eng._tt=setTimeout(()=>reprocess(x),delay); }
+function setTempo(target){ const x=eng.song; if(!x||!x.origBpm) return;
+  const lo=Math.ceil(x.origBpm*.7), hi=Math.floor(x.origBpm*1.3);
+  if(target<lo||target>hi) toast(`Tempo can go from ${lo} to ${hi} BPM for this song`);
+  x.targetBpm=Math.min(hi,Math.max(lo,target)); renderTempo();
+  tempoMap[x.id]=Object.assign(tempoMap[x.id]||{},{orig:x.origBpm,target:x.targetBpm}); saveTempo();
+  scheduleProcess(x,650); }
+function setKey(n,save=true){ const x=eng.song; if(!x) return; n=Math.max(-6,Math.min(6,n)); x.targetSemis=n; renderTempo();
+  if(save){ tempoMap[x.id]=Object.assign(tempoMap[x.id]||{},{semis:n}); saveTempo(); }
+  scheduleProcess(x,650); }
+function applySetKey(it){ const x=eng.song; if(!x||!it) return;
+  const n=it.key?semisBetween(x.origKey,it.key):((tempoMap[x.id]||{}).semis||0);
+  if(n===null){ if(it.key) toast("This song's original key isn't known, so it can't move to "+it.key+". Use ♭ and ♯ in Live."); return; }
+  if(n!==(x.targetSemis||0)) setKey(n,false); }
+/* Tempo and key are rendered together: stretch to (tempo ÷ pitch), then resample by pitch. All stems share one alignment so they stay in sync. */
+function resampleBuf(b,P,outLen){ const nb=new AudioBuffer({length:Math.max(1,outLen),numberOfChannels:b.numberOfChannels,sampleRate:b.sampleRate});
+  for(let ch=0;ch<b.numberOfChannels;ch++){ const d=b.getChannelData(ch), n=d.length, o=new Float32Array(Math.max(1,outLen));
+    for(let i=0;i<outLen;i++){ const xx=i*P, k=Math.floor(xx), t=xx-k; if(k>=n) break;
+      const y0=k>0?d[k-1]:d[k], y1=d[k], y2=k+1<n?d[k+1]:y1, y3=k+2<n?d[k+2]:y2;
+      const c1=.5*(y2-y0), c2=y0-2.5*y1+2*y2-.5*y3, c3=.5*(y3-y0)+1.5*(y1-y2); o[i]=((c3*t+c2)*t+c1)*t+y1; }
+    nb.copyToChannel(o,ch); } return nb; }
+async function processBuffers(bufs,rate,semis,onProg){ const P=Math.pow(2,semis/12), r1=rate/P, len=Math.max(...bufs.map(b=>b.length));
+  const st=Math.abs(r1-1)<1e-4?bufs:await stretchBuffers(bufs,r1,pr=>onProg&&onProg(semis?pr*.75:pr));
+  if(!semis) return st;
+  const outLen=Math.floor(len/rate), out=[];
+  for(let i=0;i<st.length;i++){ out.push(resampleBuf(st[i],P,outLen)); onProg&&onProg(.75+.25*(i+1)/st.length); await yieldUI(); }
+  return out; }
+async function reprocess(x){ const job=++tempoJob, rate=x.origBpm?x.targetBpm/x.origBpm:1, semis=x.targetSemis||0;
+  if(Math.abs(rate-x.rate)<1e-4&&semis===(x.semis||0)){ tempoMsg(x); return; }
+  let bufs;
+  try{ bufs=(Math.abs(rate-1)<1e-4&&!semis)?x.origStems:await processBuffers(x.origStems,rate,semis,pr=>{ if(job===tempoJob) $("#tempoStatus").textContent=(semis!==(x.semis||0)?"Changing key… ":"Adjusting tempo… ")+Math.round(pr*100)+"%"; }); }
+  catch(e){ $("#tempoStatus").textContent="This device couldn't make that change. Try a shorter song."; return; }
+  if(job!==tempoJob||eng.song!==x) return;
+  const was=eng.playing, origT=curPos()*x.rate; if(was) pause();
+  x.stems.forEach((z,i)=>z.buffer=bufs[i]); x.rate=rate; x.semis=semis; if(x.origBpm) x.bpm=Math.round(x.targetBpm);
+  if(x.origKey&&parseKey(x.origKey)) x.key=keyName(x.origKey,semis);
+  applyTiming(x); eng.offset=Math.min(origT/rate,x.duration);
+  renderHead(); renderPads(); renderTempo(); tempoMsg(x); renderSets&&$("#v-sets")&&!$("#v-sets").hidden&&renderSets();
+  if(was) startAt(eng.offset); else tick(); }
+function tempoMsg(x){ const bits=[]; if(!x.origBpm) bits.push("Tap along to set this song's tempo.");
+  else if(Math.abs(x.rate-1)>1e-4) bits.push(`Playing at ${Math.round(x.rate*100)}% speed.`);
+  if(x.semis) bits.push(`Moved ${x.semis>0?"up":"down"} ${Math.abs(x.semis)} half step${Math.abs(x.semis)===1?"":"s"}.`);
+  $("#tempoStatus").textContent=bits.length?bits.join(" "):"Original tempo and key."; }
+$("#keyUp").addEventListener("click",()=>setKey((eng.song.targetSemis||0)+1));
+$("#keyDown").addEventListener("click",()=>setKey((eng.song.targetSemis||0)-1));
+$("#keyReset").addEventListener("click",()=>setKey(0));
+$("#tempoUp").addEventListener("click",()=>setTempo(Math.round(eng.song.targetBpm)+1));
+$("#tempoDown").addEventListener("click",()=>setTempo(Math.round(eng.song.targetBpm)-1));
+$("#tempoReset").addEventListener("click",()=>{ if(eng.song.origBpm) setTempo(eng.song.origBpm); });
+let taps=[];
+function tap(){ const t=performance.now(), b=$("#tapBtn"); b.classList.add("flash"); setTimeout(()=>b.classList.remove("flash"),90);
+  if(taps.length&&t-taps[taps.length-1]>2000) taps=[]; taps.push(t); if(taps.length>8) taps.shift();
+  if(taps.length<4){ $("#tempoStatus").textContent=`Keep tapping on the beat… ${4-taps.length} more`; return; }
+  const iv=[]; for(let i=1;i<taps.length;i++) iv.push(taps[i]-taps[i-1]); iv.sort((a,c)=>a-c);
+  const bpm=Math.round(60000/iv[Math.floor(iv.length/2)]); if(bpm<40||bpm>240) return;
+  const x=eng.song;
+  if(!x.origBpm){ x.origBpm=bpm*x.rate; x.targetBpm=bpm; x.bpm=bpm; x.origBar=240/x.origBpm; x.bar=240/bpm; tempoMap[x.id]={orig:x.origBpm,target:bpm}; saveTempo(); renderHead(); renderTempo();
+    $("#tempoStatus").textContent=`Song tempo set to ${bpm} BPM. Use − and + to change it.`; }
+  else setTempo(bpm); }
+$("#tapBtn").addEventListener("pointerdown",e=>{ e.preventDefault(); tap(); });
+$("#tapBtn").addEventListener("keydown",e=>{ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); tap(); } });
+
+/* ---------- Live rendering ---------- */
+function renderHead(){ const s=eng.song; $("#songTitle").textContent=s.title; $("#songEyebrow").textContent=s.example?"Example song":(s.artist||"Your song");
+  const m=$("#songMeta"); m.innerHTML=""; [["Key",s.key],["BPM",s.bpm],["Length",fmt(s.duration)],["Stems",s.stems.length]].forEach(([k,v])=>{const c=document.createElement("span");c.className="chip";c.append(k+" ");const b=document.createElement("b");b.textContent=v;c.append(b);m.append(c);}); }
+function shortName(n){ return n.replace("Verse ","V").replace("Chorus","C").replace("Bridge","B").replace("Intro","Intro").replace("Outro","Outro").replace("Part ","P"); }
+function renderPads(){ const box=$("#pads"); box.innerHTML=""; const cur=secAt(curPos());
+  eng.song.sections.forEach((s,i)=>{ const b=document.createElement("button"); b.className="pad"+(i===cur?" on":"")+(eng.queued===i?" queued":""); b.title=s.name;
+    b.innerHTML="<b></b><span></span>"; b.querySelector("b").textContent=shortName(s.name); b.querySelector("span").textContent=s.bars?s.bars+" bars":fmt(s.start);
+    b.addEventListener("click",()=>jumpTo(i)); box.append(b); }); }
+function renderMixer(){ const box=$("#mixer"); box.innerHTML="";
+  eng.song.stems.forEach((s,i)=>{ const r=document.createElement("div"); r.className="ch"; r.dataset.i=i; r.style.setProperty("--col",`var(${COLORS[s.name]||"--c-full"})`);
+    r.innerHTML=`<span class="dot"></span><div class="name"></div><button class="ms m" aria-label="Mute">M</button><button class="ms s" aria-label="Solo">S</button><div class="fader"><input type="range" min="0" max="1" step="0.01" aria-label="Volume"><span class="meter"><i></i></span></div>`;
+    r.querySelector(".name").textContent=s.name;
+    const m=r.querySelector(".m"),so=r.querySelector(".s"),f=r.querySelector("input");
+    const sync=()=>{m.setAttribute("aria-pressed",s.mute);so.setAttribute("aria-pressed",s.solo);f.value=s.vol;};
+    m.addEventListener("click",()=>{s.mute=!s.mute;sync();applyMix();}); so.addEventListener("click",()=>{s.solo=!s.solo;sync();applyMix();});
+    f.addEventListener("input",()=>{s.vol=+f.value;applyMix();}); sync(); box.append(r); }); applyMix(); }
+$("#resetMix").addEventListener("click",()=>{ eng.song.stems.forEach(s=>{s.solo=false;s.mute=s.name==="Original mix";s.vol=s.name==="Click"?.7:.8;}); renderMixer(); });
+function peaks(song,N=500){ if(song._pk) return song._pk; const p=new Float32Array(N);
+  song.stems.forEach(s=>{ if(s.name==="Click"||s.name==="Original mix") return; const d=s.buffer.getChannelData(0),step=Math.max(1,Math.floor(d.length/N));
+    for(let i=0;i<N;i++){let m=0;for(let j=i*step;j<(i+1)*step&&j<d.length;j+=8){const v=Math.abs(d[j]);if(v>m)m=v;}p[i]+=m;} });
+  let mx=0;p.forEach(v=>mx=Math.max(mx,v));if(mx)for(let i=0;i<N;i++)p[i]/=mx; return song._pk=p; }
+function drawWave(){ const cv=$("#wave"),r=cv.getBoundingClientRect(); if(!r.width||!eng.song) return; const dpr=window.devicePixelRatio||1,H=72;
+  cv.width=Math.round(r.width*dpr); cv.height=H*dpr; const g=cv.getContext("2d"); g.scale(dpr,dpr); const W=r.width,s=eng.song,pk=peaks(s),pos=curPos(),px=pos/s.duration*W,bw=W/pk.length;
+  if(eng.pend){const q=eng.song.sections[eng.pend.idx];g.fillStyle="rgba(243,181,69,.08)";g.fillRect(q.start/s.duration*W,0,(q.end-q.start)/s.duration*W,H);}
+  if(eng.loop){g.fillStyle="rgba(243,181,69,.14)";g.fillRect(eng.loop.start/s.duration*W,0,(eng.loop.end-eng.loop.start)/s.duration*W,H);}
+  s.sections.forEach(sec=>{g.fillStyle=cssVar("--line");g.fillRect(sec.start/s.duration*W,0,1,H);});
+  for(let i=0;i<pk.length;i++){const x=i*bw,h=Math.max(1,pk[i]*(H-14));g.globalAlpha=x<px?.95:.35;g.fillStyle=x<px?cssVar("--accent"):cssVar("--muted");g.fillRect(x,H-5-h,Math.max(1,bw-.6),h);}
+  g.globalAlpha=1;g.fillStyle=cssVar("--fg");g.fillRect(px-1,0,2,H); }
+$("#timeline").addEventListener("click",e=>{ const r=e.currentTarget.getBoundingClientRect(),p=(e.clientX-r.left)/r.width*eng.song.duration;
+  if(eng.playing) startAt(p); else { eng.offset=p; tick(); } renderPads(); });
+window.addEventListener("resize",drawWave);
+let lastSec=-1; const mb=new Uint8Array(128);
+function tick(){ if(!eng.song) return; const p=curPos();
+  if(eng.playing&&!eng.loop&&p>=eng.song.duration-.02){ stop(); if(eng.setIdx!=null&&$("#autoNext").checked){ const set=activeSet(); if(set&&eng.setIdx<set.items.length-1){ openSetItem(eng.setIdx+1); toast("Up next is loaded. Press play when ready."); } } return; }
+  $("#clock").textContent=fmt(p)+" / "+fmt(eng.song.duration); const si=secAt(p); $("#clockSec").textContent=eng.song.sections[si].name;
+  if(si!==lastSec){ lastSec=si; renderPads(); }
+  if(!$("#v-live").hidden) drawWave();
+  document.querySelectorAll(".ch").forEach((row,i)=>{ const bar=row.querySelector(".meter i"); if(!eng.playing||!eng.analysers[i]){bar.style.width="0";return;}
+    eng.analysers[i].getByteTimeDomainData(mb); let m=0; for(const v of mb) m=Math.max(m,Math.abs(v-128)); bar.style.width=Math.min(100,m/128*160)+"%"; }); }
+(function loop(){ tick(); requestAnimationFrame(loop); })();
+function loadSong(s,setIdx=null){ if(eng.playing) pause(); clearTimeout(eng._tt); tempoJob++; prep(s); eng.song=s; eng.setIdx=setIdx; eng.offset=0; eng.queued=null; setLoopOn(false); lastSec=-1;
+  if(ctx) buildGraph(); else eng.gains=[]; renderHead(); renderPads(); renderMixer(); renderSongs(); renderSetBar(); renderTempo(); tempoMsg(s); tick(); store.set("ml-last",s.id);
+  const t=tempoMap[s.id]||{}; let ch=false;
+  if(s.origBpm&&t.target&&Math.abs(t.target-s.targetBpm)>.05){ s.targetBpm=t.target; ch=true; }
+  if(setIdx==null&&(t.semis||0)!==(s.targetSemis||0)){ s.targetSemis=t.semis||0; ch=true; }
+  if(ch){ renderTempo(); scheduleProcess(s,0); } }
+
+/* ---------- Splitting ---------- */
+async function filt(src,sr,chain){ const off=new OfflineAudioContext(1,src.length,sr),b=off.createBuffer(1,src.length,sr); b.copyToChannel(src,0);
+  const n=off.createBufferSource(); n.buffer=b; let node=n;
+  chain.forEach(([type,f,q,gain])=>{const x=off.createBiquadFilter();x.type=type;x.frequency.value=f;if(q)x.Q.value=q;if(gain!==undefined)x.gain.value=gain;node.connect(x);node=x;});
+  node.connect(off.destination); n.start(); return off.startRendering(); }
+async function quickSplit(raw,onStep){ const sr=raw.sampleRate,len=Math.min(raw.length,sr*60*8);
+  const L=raw.getChannelData(0).subarray(0,len),R=(raw.numberOfChannels>1?raw.getChannelData(1):raw.getChannelData(0)).subarray(0,len);
+  const mid=new Float32Array(len),side=new Float32Array(len); for(let i=0;i<len;i++){mid[i]=(L[i]+R[i])*.5;side[i]=(L[i]-R[i])*.5;}
+  onStep(20); const vox=await filt(mid,sr,[["highpass",170,.7],["highpass",170,.7],["lowpass",5200,.7],["peaking",2500,1,3]]);
+  onStep(40); const bass=await filt(mid,sr,[["lowpass",140,.8],["lowpass",140,.8]]);
+  onStep(60); const drm=await filt(mid,sr,[["highpass",5500,.7],["highpass",5500,.7]]);
+  onStep(80); const inst=await filt(side,sr,[["highpass",120,.7],["peaking",800,.8,2]]);
+  const orig=ac().createBuffer(1,len,sr); orig.copyToChannel(mid,0);
+  return [{name:"Vocals",buffer:vox},{name:"Drums & cymbals",buffer:drm},{name:"Bass",buffer:bass},{name:"Guitars & keys",buffer:inst},{name:"Original mix",buffer:orig}]; }
+function sectionsFor(dur,bpm){ const bar=bpm?240/bpm:null, n=Math.max(1,Math.round(dur/30)), out=[];
+  for(let i=0;i<n;i++){ let a=i*dur/n,b=(i+1)*dur/n; if(bar){a=Math.round(a/bar)*bar;b=i===n-1?dur:Math.round(b/bar)*bar;} out.push({name:"Part "+(i+1),start:a,end:b}); } return {bar,secs:out}; }
+function songFromRecord(rec,stems){ const dur=Math.max(...stems.map(s=>s.buffer.duration)),bpmNum=typeof rec.bpm==="number"?rec.bpm:null,{bar,secs}=sectionsFor(dur,bpmNum);
+  return {id:rec.id,title:rec.title,artist:rec.kind==="ai"?"AI Split":"Quick Split",key:rec.key||"—",bpm:bpmNum?Math.round(bpmNum):"—",bpmExact:bpmNum,duration:dur,bar,sections:secs,
+    stems:stems.map(s=>({name:s.name,buffer:s.buffer,vol:s.name==="Original mix"?.8:.8,mute:s.name==="Original mix",solo:false}))}; }
+const loaded=new Map();
+async function openRecord(rec,setIdx=null){ if(loaded.has(rec.id)){ loadSong(loaded.get(rec.id),setIdx); return true; }
+  toast("Opening "+rec.title+"…"); const c=ac(); let stems;
+  try{
+    if(rec.kind==="ai") stems=await Promise.all(rec.stems.map(async s=>({name:s.name,buffer:await c.decodeAudioData(await s.blob.arrayBuffer())})));
+    else stems=await quickSplit(await c.decodeAudioData(await rec.source.arrayBuffer()),()=>{});
+    const song=songFromRecord(rec,stems); loaded.set(rec.id,song); loadSong(song,setIdx); return true;
+  }catch(e){ toast("That song couldn't be opened. Try splitting it again."); return false; } }
+
+/* ---------- Songs list ---------- */
+const example=makeExampleSong(); let records=[];
+function renderSongs(){ const box=$("#songList"); box.innerHTML="";
+  const all=[{id:"example",title:example.title,sub:"Example song · G · 72 BPM"}].concat(records.map(r=>({id:r.id,title:r.title,sub:(r.kind==="ai"?"AI Split":"Quick Split")+(r.key?" · "+r.key:"")+(r.bpm?" · "+Math.round(r.bpm)+" BPM":""),rec:r})));
+  $("#songCount").textContent=all.length+(all.length===1?" song":" songs");
+  all.forEach(s=>{ const it=document.createElement("div"); it.className="item"+(eng.song&&eng.song.id===s.id?" on":"");
+    it.innerHTML=`<div class="t"><b></b><small></small></div><div class="row"></div>`; it.querySelector("b").textContent=s.title; it.querySelector("small").textContent=s.sub;
+    it.querySelector(".t").addEventListener("click",async()=>{ if(s.rec){ if(await openRecord(s.rec)) showView("live"); } else { loadSong(example); showView("live"); } });
+    if(s.rec&&!IS_PHONE){ const sp=document.createElement("button"); sp.className="btn sm"; sp.textContent="Send to phone"; sp.addEventListener("click",()=>sendToPhone([s.rec],null)); it.querySelector(".row").append(sp); }
+    if(s.rec){ const d=document.createElement("button"); d.className="btn sm"; d.textContent="Delete";
+      d.addEventListener("click",async()=>{ if(d.dataset.a!=="1"){d.dataset.a="1";d.textContent="Tap to confirm";return;} await idb.del(s.id); syncState.tomb["song:"+s.id]=Date.now(); markDirty("song:"+s.id); loaded.delete(s.id); records=records.filter(r=>r.id!==s.id); sets.forEach(x=>x.items=x.items.filter(it=>it.songId!==s.id)); saveSets(); if(eng.song&&eng.song.id===s.id) loadSong(example); else renderSongs(); toast("Deleted"); });
+      it.querySelector(".row").append(d); }
+    box.append(it); });
+  if(!records.length){ const e=document.createElement("div"); e.className="empty"; e.innerHTML=IS_PHONE?"<b>No songs yet</b>Split songs on your laptop, then bring them in with Import.":"<b>No saved songs yet</b>Split a song and it shows up here."; box.append(e); } }
+
+/* ---------- Server ---------- */
+let server=(store.get("ml-server")||"").replace(/\/+$/,""), serverOk=false;
+$("#srvUrl").value=server;
+function setStatus(ok){ serverOk=ok; const el=$("#srvState"); el.textContent=!server?"Not set up":ok?"Connected":"Can't reach it"; el.classList.toggle("good",ok); }
+async function api(path,opts={}){ if(!server) throw new Error("no server"); const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),opts.timeout||15000);
+  const headers=Object.assign({},opts.headers||{}); if(acct.token&&!path.startsWith("/auth/log")&&!path.startsWith("/auth/signup")) headers.Authorization="Bearer "+acct.token;
+  try{ const r=await fetch(server+path,Object.assign({},opts,{headers,signal:ctl.signal}));
+    if(r.status===401&&acct.token&&!path.startsWith("/auth/")){ loggedOutRemotely(); }
+    if(!r.ok){ let m="Server error "+r.status; try{m=(await r.json()).detail||m}catch(e){} throw new Error(m); } return r; } finally{ clearTimeout(t); } }
+
+/* ---------- Accounts: log in on phone and laptop and they stay linked ---------- */
+const acct={token:store.get("ml-token")||"", user:(()=>{ try{ return JSON.parse(store.get("ml-user")||"null"); }catch(e){ return null; } })(),
+  since:+(store.get("ml-since")||0), lastSync:+(store.get("ml-last-sync")||0), state:""};
+const inClaude=!!(window.claude&&window.claude.use);
+let syncing=false, syncAgain=false, kickT=null, authMode="login";
+function saveAcct(){ store.set("ml-token",acct.token); store.set("ml-user",JSON.stringify(acct.user)); store.set("ml-since",String(acct.since)); store.set("ml-last-sync",String(acct.lastSync)); }
+function kickSync(){ if(!acct.token) return; clearTimeout(kickT); kickT=setTimeout(syncNow,1500); }
+function ago(t){ const sec=Math.round((Date.now()-t)/1000); if(sec<15) return "just now"; if(sec<60) return sec+" seconds ago"; const m=Math.round(sec/60); if(m<60) return m+" minute"+(m===1?"":"s")+" ago"; return new Date(t).toLocaleString(); }
+function renderAcct(){ const b=$("#acctBtn"), sp=b.querySelector("span"); b.classList.remove("on","warn");
+  if(!acct.token) sp.textContent="Log in";
+  else { sp.textContent=acct.state==="syncing"?"Syncing…":acct.state==="offline"?"Offline":(acct.user&&(acct.user.name||acct.user.email.split("@")[0]))||"Linked"; b.classList.add(acct.state==="offline"?"warn":"on"); }
+  $("#acctOut").hidden=!!acct.token; $("#acctIn").hidden=!acct.token;
+  if(acct.user){ $("#acctName").textContent=acct.user.name||acct.user.email; $("#acctEmail").textContent=acct.user.email; }
+  if(acct.state!=="syncing") $("#syncInfo").textContent=acct.state==="offline"?"Can't reach the server right now. Changes will sync when it's back.":acct.lastSync?"Last synced "+ago(acct.lastSync):"Not synced yet"; }
+function deviceName(){ const ua=navigator.userAgent; return window.Capacitor?"Android app":/Android/i.test(ua)?"Android browser":/iPhone|iPad/i.test(ua)?"iPhone or iPad":/Macintosh/i.test(ua)?"Mac":/Windows/i.test(ua)?"Windows PC":"Browser"; }
+function setAuthMode(m){ authMode=m; $("#tLogin").setAttribute("aria-pressed",m==="login"); $("#tSignup").setAttribute("aria-pressed",m==="signup");
+  $("#nameField").hidden=m!=="signup"; $("#authSubmit").textContent=m==="login"?"Log in":"Create account"; $("#fPass").setAttribute("autocomplete",m==="login"?"current-password":"new-password"); $("#authMsg").hidden=true; }
+$("#tLogin").addEventListener("click",()=>setAuthMode("login")); $("#tSignup").addEventListener("click",()=>setAuthMode("signup"));
+$("#acctBtn").addEventListener("click",()=>showView("account")); $("#goAcct").addEventListener("click",()=>showView("account"));
+function authMsg(m){ const el=$("#authMsg"); el.textContent=m; el.hidden=!m; }
+$("#authForm").addEventListener("submit",async e=>{ e.preventDefault();
+  if(inClaude){ authMsg("This copy inside Claude can't reach your server. Open your server's address in a browser to log in."); return; }
+  if(!server){ authMsg("Add your Musicloop server address below first."); $("#srvUrl").focus(); return; }
+  const body={email:$("#fEmail").value.trim(),password:$("#fPass").value,name:$("#fName").value.trim(),device:deviceName()};
+  $("#authSubmit").disabled=true; authMsg(authMode==="login"?"Logging in…":"Creating your account…");
+  try{ const r=await (await api("/auth/"+authMode,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})).json();
+    $("#fPass").value=""; authMsg(""); toast(authMode==="login"?"Logged in. This device is linked.":"Account created. This device is linked."); await onLoggedIn(r); }
+  catch(err){ authMsg(err.message==="no server"?"Add your Musicloop server address below first.":(err.name==="AbortError"||/fetch|network|load failed/i.test(err.message))?"Can't reach the server. Check the address and that it's running.":err.message); }
+  $("#authSubmit").disabled=false; });
+async function onLoggedIn(r){
+  acct.token=r.token; acct.user=r.user; acct.state="";
+  if(store.get("ml-sync-uid")!==r.user.id){ // first time this account is on this device: send what's here, then fetch what's there
+    acct.since=0; syncState.tomb={}; syncState.dirty=new Set();
+    for(const rec of records){ if(rec.uploaded){ rec.uploaded=false; try{ await idb.put(rec); }catch(e){} } syncState.dirty.add("song:"+rec.id); }
+    sets.forEach(x=>{ syncState.sig["set:"+x.id]=sigOf(x); if(!x.seed){ x.updated=x.updated||Date.now(); syncState.dirty.add("set:"+x.id); } });
+    if(Object.keys(tempoMap).length){ syncState.prefUpdated=syncState.prefUpdated||Date.now(); syncState.dirty.add("pref:tempo"); }
+    store.set("ml-sync-uid",r.user.id);
+  }
+  saveSync(); saveAcct(); renderAcct(); await syncNow(); }
+function loggedOutRemotely(){ acct.token=""; acct.state=""; saveAcct(); renderAcct(); toast("You were logged out. Log in again to keep this device linked."); }
+$("#logoutBtn").addEventListener("click",async()=>{ const b=$("#logoutBtn");
+  if(b.dataset.a!=="1"){ b.dataset.a="1"; b.textContent="Tap to confirm"; setTimeout(()=>{ b.dataset.a=""; b.textContent="Log out"; },4000); return; }
+  b.dataset.a=""; b.textContent="Log out"; try{ await api("/auth/logout",{method:"POST",timeout:5000,headers:{Authorization:"Bearer "+acct.token}}); }catch(e){}
+  acct.token=""; acct.state=""; saveAcct(); renderAcct(); toast("Logged out. Your songs stay on this device."); });
+$("#syncBtn").addEventListener("click",()=>syncNow());
+
+/* Sync: each device sends its changes, then fetches everyone else's. Newest change wins. */
+function extOf(name,fallback){ const m=/\.([a-z0-9]{2,5})$/i.exec(name||""); return m&&/^(mp3|wav|wave|m4a|mp4|flac|ogg|oga|opus|aac|aif|aiff|wma)$/i.test(m[1])?m[1].toLowerCase():fallback; }
+function songFiles(r){ if(r.kind==="ai") return (r.stems||[]).map((x,i)=>({file:"stem"+i+".mp3",name:x.name,blob:x.blob}));
+  return [{file:"source."+(r.ext||extOf(r.source&&r.source.name,"bin")),name:"source",blob:r.source}]; }
+function songMeta(r){ return {title:r.title,kind:r.kind,key:r.key||null,bpm:r.bpm||null,created:r.created,files:songFiles(r).map(f=>({file:f.file,name:f.name}))}; }
+async function uploadSong(r){ for(const f of songFiles(r)){ if(!f.blob) throw new Error("missing audio");
+    $("#syncInfo").textContent=`Uploading ${r.title}…`; await api(`/songs/${r.id}/files/${f.file}`,{method:"PUT",headers:{"Content-Type":"application/octet-stream"},body:f.blob,timeout:600000}); }
+  r.uploaded=true; try{ await idb.put(r); }catch(e){} }
+async function downloadSong(d){ const m=d.data||{}, files=[];
+  for(const f of (m.files||[])){ $("#syncInfo").textContent=`Downloading ${m.title||"a song"}…`; files.push(Object.assign({},f,{blob:await (await api(`/songs/${d.id}/files/${f.file}`,{timeout:600000})).blob()})); }
+  const rec={id:d.id,title:m.title||"Untitled song",kind:m.kind==="ai"?"ai":"quick",key:m.key||null,bpm:m.bpm||null,created:m.created||Date.now(),updated:d.updated,uploaded:true};
+  if(rec.kind==="ai"){ if(!files.length) return null; rec.stems=files.map(f=>({name:f.name,blob:f.blob})); }
+  else { if(!files[0]) return null; rec.source=files[0].blob; rec.ext=extOf(files[0].file,"bin"); }
+  return rec; }
+function currentVersion(key){ if(syncState.tomb[key]) return syncState.tomb[key]; const i=key.indexOf(":"), kind=key.slice(0,i), id=key.slice(i+1);
+  if(kind==="set") return (sets.find(z=>z.id===id)||{}).updated; if(kind==="pref") return syncState.prefUpdated;
+  const r=records.find(z=>z.id===id)||{}; return r.updated||r.created; }
+async function pushDirty(){ const docs=[];
+  for(const key of [...syncState.dirty]){ const i=key.indexOf(":"), kind=key.slice(0,i), id=key.slice(i+1);
+    if(syncState.tomb[key]){ docs.push({kind,id,deleted:true,updated:syncState.tomb[key]}); continue; }
+    if(kind==="set"){ const x=sets.find(z=>z.id===id); if(!x||x.seed){ syncState.dirty.delete(key); continue; } if(!x.updated) x.updated=Date.now(); docs.push({kind,id,updated:x.updated,data:{name:x.name,items:x.items}}); }
+    else if(kind==="pref"){ if(!syncState.prefUpdated) syncState.prefUpdated=Date.now(); docs.push({kind,id,updated:syncState.prefUpdated,data:tempoMap}); }
+    else if(kind==="song"){ const r=records.find(z=>z.id===id); if(!r){ syncState.dirty.delete(key); continue; } if(!r.uploaded) await uploadSong(r); docs.push({kind,id,updated:r.updated||r.created,data:songMeta(r)}); }
+    else syncState.dirty.delete(key); }
+  if(docs.length){ await api("/sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({docs}),timeout:30000});
+    docs.forEach(d=>{ const key=d.kind+":"+d.id; if(currentVersion(key)===d.updated) syncState.dirty.delete(key); }); }
+  saveSync(); }
+async function removeSongLocal(id){ await idb.del(id); loaded.delete(id); records=records.filter(z=>z.id!==id);
+  let ch=false; sets.forEach(x=>{ const n=x.items.length; x.items=x.items.filter(it=>it.songId!==id); if(x.items.length!==n) ch=true; }); if(ch) saveSets();
+  if(eng.song&&eng.song.id===id) loadSong(example); }
+async function pullRemote(){ const res=await (await api("/sync?since="+acct.since,{timeout:30000})).json();
+  let setsChanged=false, songsChanged=false, allOk=true; const downloads=[];
+  for(const d of res.docs){ const key=d.kind+":"+d.id;
+    if(d.kind==="set"){ const local=sets.find(z=>z.id===d.id);
+      if(d.deleted){ syncState.tomb[key]=Math.max(syncState.tomb[key]||0,d.updated); syncState.dirty.delete(key);
+        if(local&&(local.updated||0)<=d.updated){ sets=sets.filter(z=>z.id!==d.id); delete syncState.sig[key]; setsChanged=true; } continue; }
+      if(local&&(local.updated||0)>=d.updated) continue; if((syncState.tomb[key]||0)>=d.updated) continue;
+      const nx={id:d.id,name:(d.data&&d.data.name)||"Setlist",items:(d.data&&Array.isArray(d.data.items))?d.data.items:[],updated:d.updated};
+      sets=sets.filter(z=>!z.seed||z.id===d.id);
+      if(local) Object.assign(local,nx); else sets.push(nx);
+      syncState.sig[key]=sigOf(nx); syncState.dirty.delete(key); setsChanged=true; }
+    else if(d.kind==="pref"&&d.id==="tempo"&&!d.deleted){ if(d.updated>syncState.prefUpdated){ const remote=d.data||{}, extra=Object.keys(tempoMap).some(k=>!(k in remote));
+        tempoMap=Object.assign({},tempoMap,remote); store.set("ml-tempo",JSON.stringify(tempoMap));
+        if(extra){ syncState.prefUpdated=Date.now(); syncState.dirty.add(key); } else { syncState.prefUpdated=d.updated; syncState.dirty.delete(key); } } }
+    else if(d.kind==="song"){ const local=records.find(z=>z.id===d.id);
+      if(d.deleted){ syncState.tomb[key]=Math.max(syncState.tomb[key]||0,d.updated); syncState.dirty.delete(key); if(local){ await removeSongLocal(d.id); songsChanged=true; } continue; }
+      if(!local&&!((syncState.tomb[key]||0)>=d.updated)) downloads.push(d); } }
+  if(setsChanged){ if(!sets.length) sets=[newSeedSet()]; if(!sets.some(z=>z.id===activeSetId)) activeSetId=sets[0].id;
+    store.set("ml-sets",JSON.stringify(sets)); store.set("ml-active-set",activeSetId); renderSets(); renderSetBar(); }
+  saveSync();
+  for(const d of downloads){ try{ const rec=await downloadSong(d); if(!rec) continue;
+      try{ await idb.put(rec); }catch(e){ allOk=false; toast("This device is out of space for synced songs."); break; }
+      records.push(rec); records.sort((a,b)=>b.created-a.created); songsChanged=true; renderSongs(); }catch(e){ allOk=false; } }
+  if(songsChanged){ renderSongs(); renderSets(); renderSetBar(); }
+  if(allOk){ acct.since=res.now; saveAcct(); } }
+async function syncNow(){ if(!acct.token||!server||inClaude) return; if(syncing){ syncAgain=true; return; }
+  syncing=true; acct.state="syncing"; renderAcct(); $("#syncInfo").textContent="Syncing now…";
+  try{ await pushDirty(); await pullRemote(); acct.state="ok"; acct.lastSync=Date.now(); }
+  catch(e){ acct.state=acct.token?"offline":""; }
+  finally{ syncing=false; saveAcct(); renderAcct(); if(syncAgain){ syncAgain=false; kickSync(); } } }
+/* Find my server: look for the Musicloop server on this Wi-Fi so nobody has to type an address */
+const SUBNETS=["192.168.1","192.168.0","10.0.0","192.168.86","192.168.68","192.168.2","10.0.1","192.168.4","192.168.50","192.168.100","10.1.10","172.20.10"];
+let finding=false;
+async function probe(base,ms){ const ctl=new AbortController(), t=setTimeout(()=>ctl.abort(),ms);
+  try{ const j=await (await fetch(base+"/health",{signal:ctl.signal,cache:"no-store"})).json(); return j&&j.ok&&j.model?j:null; }catch(e){ return null; } finally{ clearTimeout(t); } }
+async function findServer(){ if(finding) return;
+  if(inClaude){ $("#srvMsg").textContent="This copy inside Claude can't search your Wi-Fi. Use the phone app or the server's address in a browser."; return; }
+  finding=true; const btn=$("#srvFind"); btn.disabled=true; const msg=$("#srvMsg");
+  let subnets=[...SUBNETS]; const m=/^https?:\/\/(\d+\.\d+\.\d+)\.\d+/.exec(server||store.get("ml-last-server")||"");
+  if(m) subnets=[m[1],...subnets.filter(x=>x!==m[1])];
+  let found=null;
+  for(const c of [server,store.get("ml-last-server")].filter(Boolean)){ msg.textContent="Checking your last server…"; if(await probe(c,1500)){ found=c; break; } }
+  if(!found){ const hosts=[]; for(const [a,b] of [[2,60],[61,254]]) for(const sn of subnets) for(let h=a;h<=b;h++) hosts.push(`http://${sn}.${h}:8000`);
+    let idx=0, done=0; msg.textContent="Searching your Wi-Fi…";
+    const worker=async()=>{ while(!found&&idx<hosts.length){ const h=hosts[idx++]; const j=await probe(h,700); done++; if(j&&!found) found=h;
+      if(done%96===0&&!found) msg.textContent=`Searching your Wi-Fi… ${Math.round(done/hosts.length*100)}%`; } };
+    await Promise.all(Array.from({length:64},worker)); }
+  finding=false; btn.disabled=false;
+  if(found){ server=found; $("#srvUrl").value=server; store.set("ml-server",server); store.set("ml-last-server",server);
+    await testServer(); setMode(mode); msg.textContent="Found your server at "+server; toast("Connected to your Musicloop server"); if(acct.token) syncNow(); }
+  else msg.textContent="Couldn't find it. Check that the Musicloop window is open on your laptop and both are on the same Wi-Fi, or type the address that window shows."; }
+$("#srvFind").addEventListener("click",findServer);
+async function showPhoneAddress(){ // on the laptop browser, show the address to use on the phone
+  if(window.Capacitor||inClaude||!server||server!==location.origin) return;
+  try{ const j=await (await fetch(server+"/health",{cache:"no-store"})).json(); const ip=(j.lan||[])[0]; if(!ip) return;
+    $("#phoneAddr").textContent=`http://${ip}:${location.port||80}`; $("#phoneConnect").hidden=false; }catch(e){} }
+async function autoServer(){ // opened from the server's own address on a laptop: use it automatically
+  if(server||inClaude||window.Capacitor||!/^https?:$/.test(location.protocol)) return;
+  try{ const j=await (await fetch(location.origin+"/health",{cache:"no-store"})).json(); if(j&&j.ok&&j.model){ server=location.origin; store.set("ml-server",server); $("#srvUrl").value=server; } }catch(e){} }
+async function testServer(){ if(!server){ setStatus(false); return false; } try{ await api("/health",{timeout:5000}); setStatus(true); store.set("ml-last-server",server); return true; }catch(e){ setStatus(false); return false; } }
+$("#srvSave").addEventListener("click",async()=>{ let v=$("#srvUrl").value.trim(); if(v&&!/^https?:\/\//i.test(v)) v="http://"+v; server=v.replace(/\/+$/,""); $("#srvUrl").value=server; store.set("ml-server",server);
+  $("#srvMsg").textContent="Testing…"; const ok=await testServer(); $("#srvMsg").textContent=ok?"Connected":"Can't reach it. Check the address and that the server is running on the same Wi-Fi."; if(ok) setMode("ai"); });
+
+let mode="quick";
+function setMode(m){ mode=m; $("#mAI").setAttribute("aria-pressed",m==="ai"); $("#mQuick").setAttribute("aria-pressed",m==="quick");
+  $("#modeNote").textContent = m==="ai" ? (serverOk?"AI Split sends the song to your Musicloop server and brings back 6 clean stems with key and BPM.":"AI Split needs your Musicloop server. Set it up under Account at the top.") : "Quick Split runs on this phone in seconds. Good for rehearsal."; }
+$("#mAI").addEventListener("click",()=>setMode("ai")); $("#mQuick").addEventListener("click",()=>setMode("quick"));
+
+let lastSplitId=null;
+function job(status,pct,name){ $("#jobPanel").hidden=false; if(name!==undefined) $("#jobName").textContent=name; $("#jobStatus").textContent=status; $("#jobBar").style.width=pct+"%"; }
+/* Drop zone + queue: drop or pick one song or a whole set; they split one after another */
+const AUDIO_EXT=/\.(wav|wave|mp3|m4a|aac|flac|ogg|oga|opus|aif|aiff|wma|mp4)$/i;
+const queue=[]; let busy=false, batch={done:0,failed:0,firstId:null};
+function handleFiles(list){ const files=[...(list||[])]; if(!files.length) return;
+  const ok=files.filter(f=>(f.type||"").startsWith("audio/")||AUDIO_EXT.test(f.name)), bad=files.filter(f=>!ok.includes(f));
+  if(bad.length) toast(bad.length===1?`${bad[0].name} isn't a song file`:`Skipped ${bad.length} files that aren't songs`);
+  if(!ok.length) return;
+  if(!busy) batch={done:0,failed:0,firstId:null};
+  queue.push(...ok); renderQueue(); if(!busy) runQueue(); }
+function renderQueue(){ const q=$("#queueInfo"); q.hidden=!queue.length; q.textContent=queue.length?`${queue.length} more waiting: ${queue.map(f=>f.name).join(", ")}`:""; }
+async function runQueue(){ busy=true; $("#openSplit").hidden=true;
+  while(queue.length){ const f=queue.shift(); renderQueue(); const id=await splitFile(f); if(id){ batch.done++; if(!batch.firstId) batch.firstId=id; } else batch.failed++; }
+  busy=false; renderQueue(); lastSplitId=batch.firstId;
+  if(batch.done+batch.failed>1) job(`${batch.done} song${batch.done===1?"":"s"} split and saved to Songs`+(batch.failed?` · ${batch.failed} couldn't be split`:""),100,"Batch finished");
+  $("#openSplit").hidden=!batch.firstId; $("#openSplit").textContent=batch.done>1?"Open the first one in Live":"Open in Live"; }
+async function splitFile(f){ if(IS_PHONE){ toast("Splitting happens on your laptop. Use Import here."); return null; }
+  const title=f.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").slice(0,60);
+  if(mode==="ai"){ if(!serverOk&&!(await testServer())){ toast("Can't reach your AI server. Using Quick Split."); setMode("quick"); } }
+  try{
+    let rec;
+    if(mode==="ai"){
+      job("Uploading…",5,title); const fd=new FormData(); fd.append("file",f,f.name);
+      const {job_id}=await (await api("/split",{method:"POST",body:fd,timeout:300000})).json();
+      let st; do{ await new Promise(r=>setTimeout(r,2500)); st=await (await api("/jobs/"+job_id)).json();
+        job(st.status==="queued"?"Waiting in line…":st.status==="analyzing"?"Finding key and BPM…":st.status==="separating"?"AI is separating stems…":st.status,Math.max(8,st.progress||0)); }
+      while(st.status!=="ready"&&st.status!=="failed");
+      if(st.status==="failed") throw new Error(st.error||"The server couldn't split that song.");
+      job("Downloading stems…",92);
+      const stems=await Promise.all(st.stems.map(async s=>({name:s.name,blob:await (await api(`/jobs/${job_id}/stems/${s.id}`,{timeout:120000})).blob()})));
+      rec={id:"s"+Date.now(),title,kind:"ai",key:st.key||null,bpm:st.bpm||null,stems,created:Date.now()};
+    } else {
+      job("Reading the audio…",8,title); let raw;
+      try{ raw=await ac().decodeAudioData(await f.arrayBuffer()); }
+      catch(e){ throw new Error(`${f.name} can't be read on this device.`+(/\.(aif|aiff|wma)$/i.test(f.name)?" Use AI Split for this format, or save it as WAV or MP3.":" WAV, MP3, M4A, FLAC and OGG work best.")); }
+      const stems=await quickSplit(raw,p=>job("Separating…",p));
+      rec={id:"s"+Date.now(),title,kind:"quick",source:f,created:Date.now()};
+      loaded.set(rec.id,songFromRecord(rec,stems));
+    }
+    try{ await idb.put(rec); }catch(err){ toast("Split worked, but there isn't space to save it on this device."); }
+    rec.updated=Date.now(); records.unshift(rec); markDirty("song:"+rec.id); renderSongs(); job("Ready · saved to Songs",100); $("#sendSplit").hidden=false; return rec.id;
+  }catch(err){ const m=err.message&&err.message!=="no server"?err.message:`${f.name} couldn't be split. Try a WAV or MP3.`; job(m,0); if(queue.length) toast(m); return null; } }
+$("#fileIn").addEventListener("change",e=>{ const fl=[...e.target.files]; e.target.value=""; handleFiles(fl); });
+const dz=$("#dropZone");
+["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{ e.preventDefault(); dz.classList.add("over"); }));
+["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,()=>dz.classList.remove("over")));
+/* Drop anywhere on the page (laptop) */
+let dragDepth=0; const hasFiles=e=>e.dataTransfer&&[...(e.dataTransfer.types||[])].includes("Files");
+window.addEventListener("dragenter",e=>{ if(!hasFiles(e)) return; e.preventDefault(); dragDepth++; $("#dropAll").hidden=false; });
+window.addEventListener("dragover",e=>{ if(hasFiles(e)) e.preventDefault(); });
+window.addEventListener("dragleave",e=>{ if(!hasFiles(e)) return; dragDepth=Math.max(0,dragDepth-1); if(!dragDepth) $("#dropAll").hidden=true; });
+window.addEventListener("drop",e=>{ if(!hasFiles(e)) return; e.preventDefault(); dragDepth=0; $("#dropAll").hidden=true; dz.classList.remove("over"); showView("split"); handleFiles(e.dataTransfer.files); });
+$("#sendSplit").addEventListener("click",()=>{ const r=records.find(x=>x.id===lastSplitId); if(r) sendToPhone([r],null); });
+$("#goImport").addEventListener("click",()=>showView("import"));
+$("#openSplit").addEventListener("click",async()=>{ const r=records.find(x=>x.id===lastSplitId); if(r&&await openRecord(r)) showView("live"); });
+
+/* ---------- Track Swap (hosted on the Musicloop server) ---------- */
+let swaps=[]; const myTokens=JSON.parse(store.get("ml-swap-tokens")||"{}");
+let cdb=null, myUid=null; // when opened inside Claude, Track Swap uses the page's shared board
+async function initClaudeBoard(){
+  if(!window.claude||!window.claude.use) return;
+  const [d,u]=await Promise.all([window.claude.use("db"),window.claude.use("user")]); if(!d) return;
+  cdb=d; if(u){ try{ myUid=await u.id(); }catch(e){} }
+  cdb.collection("swaps").orderBy("createdAt","desc").limit(300).onSnapshot(snap=>{ swaps=snap.docs.map(x=>Object.assign({id:x.id},x.data())); if(!$("#v-swap").hidden) renderSwaps(); },
+    ()=>{ cdb=null; if(!$("#v-swap").hidden) renderSwaps(["Track Swap lost its connection","Reload to reconnect."]); });
+}
+function renderSwaps(msg){ const box=$("#swapFeed"); box.innerHTML="";
+  if(msg){ box.innerHTML=`<div class="empty"><b>${msg[0]}</b>${msg[1]}</div>`; return; }
+  const q=$("#swapSearch").value.toLowerCase().trim(), list=swaps.filter(p=>!q||[p.song,p.artist,p.church,p.key,p.note].join(" ").toLowerCase().includes(q));
+  if(!list.length) return renderSwaps(swaps.length?["No matches","Try another song or key."]:["No arrangements shared yet","Be the first: share a song your team has stems for."]);
+  list.forEach(p=>{ const el=document.createElement("article"); el.className="post";
+    el.innerHTML=`<div class="row between"><span class="title"></span><span class="chip mono kb"></span></div><div class="muted by" style="font-size:13px"></div><div class="row st"></div><p class="nt"></p><div class="contact"></div><div class="row act"></div>`;
+    el.querySelector(".title").textContent=p.song; el.querySelector(".kb").textContent=(p.key||"—")+" · "+(p.bpm||"—");
+    el.querySelector(".by").textContent=[p.artist,p.ccli?"CCLI "+p.ccli:"",p.church].filter(Boolean).join(" · ");
+    (p.stems||[]).forEach(s=>{const c=document.createElement("span");c.className="chip";c.textContent=s;el.querySelector(".st").append(c);});
+    if(p.note) el.querySelector(".nt").textContent=p.note; else el.querySelector(".nt").remove();
+    el.querySelector(".contact").textContent=p.contact||"";
+    const cp=document.createElement("button"); cp.className="btn sm"; cp.textContent="Copy contact";
+    cp.addEventListener("click",()=>{ (navigator.clipboard?navigator.clipboard.writeText(p.contact||""):Promise.reject()).then(()=>toast("Contact copied"),()=>toast("Press and hold the contact to copy it")); });
+    el.querySelector(".act").append(cp);
+    if(cdb?(myUid&&p.by===myUid):myTokens[p.id]){ const d=document.createElement("button"); d.className="btn sm"; d.textContent="Remove";
+      d.addEventListener("click",async()=>{ if(d.dataset.a!=="1"){d.dataset.a="1";d.textContent="Tap to confirm";return;}
+        try{ if(cdb){ await cdb.collection("swaps").doc(p.id).delete(); toast("Removed"); return; }
+          await api(`/swaps/${p.id}?token=${encodeURIComponent(myTokens[p.id])}`,{method:"DELETE"}); delete myTokens[p.id]; store.set("ml-swap-tokens",JSON.stringify(myTokens)); loadSwaps(); toast("Removed"); }catch(e){ toast("Couldn't remove it. Try again."); } });
+      el.querySelector(".act").append(d); }
+    box.append(el); }); }
+async function loadSwaps(){ if(cdb) return renderSwaps(); if(!server) return renderSwaps(["Connect your server first","Track Swap lives on your Musicloop server. Set it up under Account at the top."]);
+  try{ swaps=await (await api("/swaps")).json(); setStatus(true); renderSwaps(); }catch(e){ setStatus(false); renderSwaps(["Can't reach your server","Check that it's running and the phone is on the same Wi-Fi."]); } }
+$("#swapRefresh").addEventListener("click",loadSwaps); $("#swapSearch").addEventListener("input",()=>renderSwaps());
+$("#swapForm").addEventListener("submit",async e=>{ e.preventDefault();
+  if(!server&&!cdb){ toast("Set up your Musicloop server under Account first."); return; }
+  const body={song:$("#fSong").value.trim(),artist:$("#fArtist").value.trim(),ccli:$("#fCcli").value.trim(),key:$("#fKey").value,bpm:Number($("#fBpm").value)||null,
+    stems:[...document.querySelectorAll("#fStems input:checked")].map(i=>i.value),church:$("#fChurch").value.trim(),contact:$("#fContact").value.trim(),note:$("#fNote").value.trim()};
+  $("#postBtn").disabled=true;
+  try{ if(cdb){ await cdb.collection("swaps").add(Object.assign({},body,{createdAt:Date.now(),by:myUid||null})); }
+    else { const r=await (await api("/swaps",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})).json();
+    myTokens[r.id]=r.token; store.set("ml-swap-tokens",JSON.stringify(myTokens)); } store.set("ml-church",body.church); store.set("ml-contact",body.contact);
+    ["#fSong","#fArtist","#fCcli","#fNote"].forEach(s=>$(s).value=""); $("#shareBox").open=false; toast("Shared with other churches"); loadSwaps();
+  }catch(err){ toast(err.message||"Couldn't share that. Try again."); }
+  $("#postBtn").disabled=false; });
+$("#fChurch").value=store.get("ml-church")||""; $("#fContact").value=store.get("ml-contact")||"";
+
+
+/* ---------- Setlists ---------- */
+const uid=()=>Math.random().toString(36).slice(2,9);
+let sets=[]; try{ sets=JSON.parse(store.get("ml-sets")||"[]"); }catch(e){ sets=[]; }
+function newSeedSet(){ const x={id:uid(),name:"Sunday service",seed:true,items:[{id:uid(),songId:"example",key:"",notes:"Example: start with pad only, drums in on verse 1"}]}; syncState.sig["set:"+x.id]=sigOf(x); saveSync(); return x; }
+if(!Array.isArray(sets)||!sets.length) sets=[newSeedSet()];
+let activeSetId=store.get("ml-active-set"); if(!sets.some(x=>x.id===activeSetId)) activeSetId=sets[0].id;
+let openEdit=null, drag=null;
+$("#autoNext").checked=store.get("ml-autonext")!=="0";
+$("#autoNext").addEventListener("change",e=>store.set("ml-autonext",e.target.checked?"1":"0"));
+function activeSet(){ return sets.find(x=>x.id===activeSetId)||sets[0]; }
+function saveSets(){ const now=Date.now(), keys=new Set();
+  sets.forEach(x=>{ const key="set:"+x.id, sg=sigOf(x); keys.add(key);
+    if(syncState.sig[key]!==sg){ syncState.sig[key]=sg; x.updated=now; delete x.seed; syncState.dirty.add(key); delete syncState.tomb[key]; } });
+  Object.keys(syncState.sig).forEach(k=>{ if(k.startsWith("set:")&&!keys.has(k)){ delete syncState.sig[k]; syncState.tomb[k]=now; syncState.dirty.add(k); } });
+  store.set("ml-sets",JSON.stringify(sets)); store.set("ml-active-set",activeSetId); saveSync(); kickSync(); }
+function songInfo(id){
+  if(id==="example") return {title:example.title,key:"G",bpm:72,ok:true};
+  const r=records.find(x=>x.id===id); if(!r) return {title:"Song not on this device",ok:false};
+  return {title:r.title,key:r.key||"",bpm:r.bpm?Math.round(r.bpm):"",ok:true,rec:r};
+}
+async function openSetItem(i){
+  const set=activeSet(), it=set&&set.items[i]; if(!it) return false;
+  const info=songInfo(it.songId);
+  if(!info.ok){ toast("That song isn't on this device. Split it again, then add it."); return false; }
+  let ok=true; if(it.songId==="example") loadSong(example,i); else ok=await openRecord(info.rec,i);
+  if(ok) applySetKey(it); return ok;
+}
+function renderSetBar(){
+  const set=activeSet(), i=eng.setIdx, it=set&&i!=null?set.items[i]:null;
+  $("#setBar").hidden=!it;
+  const note=$("#setNote");
+  if(!it){ note.hidden=true; return; }
+  $("#setPos").textContent=`${set.name||"Setlist"} · Song ${i+1} of ${set.items.length}`;
+  const nx=set.items[i+1]; $("#upNext").textContent=nx?"Up next: "+songInfo(nx.songId).title:"Last song in the set";
+  $("#prevSong").disabled=i===0; $("#nextSong").disabled=!nx;
+  const bits=[it.key?"Play in "+it.key:"",it.notes].filter(Boolean); note.textContent=bits.join(" · "); note.hidden=!bits.length;
+}
+$("#prevSong").addEventListener("click",()=>{ if(eng.setIdx>0) openSetItem(eng.setIdx-1); });
+$("#nextSong").addEventListener("click",()=>{ const set=activeSet(); if(eng.setIdx!=null&&eng.setIdx<set.items.length-1) openSetItem(eng.setIdx+1); });
+
+function renderSets(){
+  const pick=$("#setPick"); pick.innerHTML="";
+  sets.forEach(x=>{ const o=document.createElement("option"); o.value=x.id; o.textContent=(x.name||"Untitled setlist")+" ("+x.items.length+")"; pick.append(o); });
+  pick.value=activeSetId;
+  const set=activeSet(); if(document.activeElement!==$("#setName")) $("#setName").value=set.name||"";
+  const box=$("#setRows"); box.innerHTML="";
+  if(!set.items.length){ box.innerHTML='<div class="empty"><b>This setlist is empty</b>Tap Add songs to build your service.</div>'; }
+  set.items.forEach((it,i)=>{
+    const info=songInfo(it.songId), row=document.createElement("div");
+    row.className="srow"+(eng.setIdx===i&&set.id===activeSetId?" on":""); row.dataset.i=i;
+    row.innerHTML=`<div class="main"><button class="handle" aria-label="Drag to reorder">≡</button><span class="num"></span><div class="info"><b></b><small></small></div><button class="go" aria-label="Load this song">▶</button></div>`;
+    row.querySelector(".num").textContent=String(i+1).padStart(2,"0");
+    row.querySelector(".info b").textContent=info.title;
+    const sm=row.querySelector(".info small");
+    if(!info.ok){ sm.textContent="Split it again to play"; sm.classList.add("missing"); }
+    else sm.textContent=[it.key?"Key "+it.key:(info.key?"Key "+info.key:""),info.bpm?info.bpm+" BPM":"",it.notes].filter(Boolean).join(" · ")||"Tap to add key and notes";
+    row.querySelector(".info").addEventListener("click",()=>{ openEdit=openEdit===it.id?null:it.id; renderSets(); });
+    row.querySelector(".go").addEventListener("click",async()=>{ if(await openSetItem(i)) showView("live"); });
+    const h=row.querySelector(".handle");
+    h.addEventListener("pointerdown",e=>{ e.preventDefault(); drag={from:i,over:i,row}; row.classList.add("dragging"); try{h.setPointerCapture(e.pointerId);}catch(_){} });
+    h.addEventListener("pointermove",e=>{ if(!drag) return; const rows=[...box.querySelectorAll(".srow")]; let to=rows.length;
+      for(let k=0;k<rows.length;k++){ const r=rows[k].getBoundingClientRect(); if(e.clientY<r.top+r.height/2){ to=k; break; } }
+      drag.over=to; rows.forEach(r=>r.classList.remove("drop-before","drop-after"));
+      if(to<rows.length) rows[to].classList.add("drop-before"); else rows[rows.length-1].classList.add("drop-after"); });
+    const end=()=>{ if(!drag) return; let {from,over}=drag; drag=null; if(over>from) over--; if(over!==from) moveItem(from,over); else renderSets(); };
+    h.addEventListener("pointerup",end); h.addEventListener("pointercancel",()=>{ drag=null; renderSets(); });
+    if(openEdit===it.id){
+      const ed=document.createElement("div"); ed.className="edit";
+      ed.innerHTML=`<div class="grid2"><div class="field"><label>Play in key</label><select class="k"><option value="">Original</option>${["C","Db","D","Eb","E","F","F#","G","Ab","A","Bb","B"].map(k=>`<option>${k}</option>`).join("")}</select></div><div class="field"><label>Order</label><button class="btn sm up" type="button">Move up</button></div></div>
+        <div class="field"><label>Notes for the band</label><textarea class="n" maxlength="300" placeholder="e.g. Bridge x4, end on the chorus tag"></textarea></div>
+        <div class="row"><button class="btn sm dn" type="button">Move down</button><button class="btn sm rm" type="button">Remove from setlist</button></div>`;
+      ed.querySelector(".k").value=it.key||""; ed.querySelector(".n").value=it.notes||"";
+      ed.querySelector(".k").addEventListener("change",e=>{ it.key=e.target.value; saveSets(); renderSetBar(); if(eng.setIdx===i&&set.id===activeSetId) applySetKey(it); });
+      ed.querySelector(".n").addEventListener("change",e=>{ it.notes=e.target.value.trim(); saveSets(); renderSets(); renderSetBar(); });
+      ed.querySelector(".up").disabled=i===0; ed.querySelector(".dn").disabled=i===set.items.length-1;
+      ed.querySelector(".up").addEventListener("click",()=>moveItem(i,i-1));
+      ed.querySelector(".dn").addEventListener("click",()=>moveItem(i,i+1));
+      const rm=ed.querySelector(".rm"); rm.addEventListener("click",()=>{ if(rm.dataset.a!=="1"){rm.dataset.a="1";rm.textContent="Tap to confirm";return;}
+        set.items.splice(i,1); if(eng.setIdx===i) eng.setIdx=null; else if(eng.setIdx>i) eng.setIdx--; openEdit=null; saveSets(); renderSets(); renderSetBar(); });
+      row.append(ed);
+    }
+    box.append(row);
+  });
+  $("#setPlay").disabled=!set.items.length;
+  if(!$("#setPicker").hidden) renderPicker();
+}
+function moveItem(from,to){ const set=activeSet(); if(to<0||to>=set.items.length) return renderSets();
+  const [it]=set.items.splice(from,1); set.items.splice(to,0,it);
+  if(eng.setIdx!=null){ const cur=eng.setIdx; if(cur===from) eng.setIdx=to; else if(from<cur&&to>=cur) eng.setIdx=cur-1; else if(from>cur&&to<=cur) eng.setIdx=cur+1; }
+  saveSets(); renderSets(); renderSetBar(); }
+function renderPicker(){ const box=$("#pickList"); box.innerHTML="";
+  const all=[{id:"example",title:example.title,sub:"Example song"}].concat(records.map(r=>({id:r.id,title:r.title,sub:r.kind==="ai"?"AI Split":"Quick Split"})));
+  all.forEach(s=>{ const row=document.createElement("div"); row.className="pickrow"; row.innerHTML='<div style="min-width:0"><b></b><small></small></div><button class="btn sm">Add</button>';
+    row.querySelector("b").textContent=s.title; row.querySelector("small").textContent=s.sub;
+    row.querySelector("button").addEventListener("click",()=>{ activeSet().items.push({id:uid(),songId:s.id,key:"",notes:""}); saveSets(); renderSets(); toast("Added "+s.title); });
+    box.append(row); });
+  if(!records.length){ const n=document.createElement("p"); n.className="note"; n.style.marginTop="8px"; n.textContent="Split songs in the Split tab and they appear here."; box.append(n); } }
+$("#setAdd").addEventListener("click",()=>{ const p=$("#setPicker"); p.hidden=!p.hidden; $("#setAdd").textContent=p.hidden?"Add songs":"Done adding"; if(!p.hidden) renderPicker(); });
+$("#setPick").addEventListener("change",e=>{ activeSetId=e.target.value; openEdit=null; if(eng.setIdx!=null){ eng.setIdx=null; renderSetBar(); } saveSets(); renderSets(); });
+$("#setName").addEventListener("input",e=>{ activeSet().name=e.target.value; saveSets(); const o=$("#setPick").selectedOptions[0]; if(o) o.textContent=(e.target.value||"Untitled setlist")+" ("+activeSet().items.length+")"; renderSetBar(); });
+$("#setNew").addEventListener("click",()=>{ const x={id:uid(),name:"New setlist",items:[]}; sets.push(x); activeSetId=x.id; eng.setIdx=null; saveSets(); renderSets(); renderSetBar(); const n=$("#setName"); n.focus(); n.select(); });
+$("#setDelete").addEventListener("click",()=>{ const b=$("#setDelete"); if(b.dataset.a!=="1"){ b.dataset.a="1"; b.textContent="Tap to confirm"; setTimeout(()=>{b.dataset.a="";b.textContent="Delete setlist";},4000); return; }
+  b.dataset.a=""; b.textContent="Delete setlist"; sets=sets.filter(x=>x.id!==activeSetId);
+  if(!sets.length) sets=[{id:uid(),name:"New setlist",items:[]}]; activeSetId=sets[0].id; eng.setIdx=null; saveSets(); renderSets(); renderSetBar(); toast("Setlist deleted"); });
+$("#setPlay").addEventListener("click",async()=>{ if(await openSetItem(0)) showView("live"); });
+
+
+/* ---------- Song files: a standard .zip holding musicloop.json + the stems ---------- */
+const CRC_T=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(u8){ let c=0xFFFFFFFF; for(let i=0;i<u8.length;i++) c=CRC_T[(c^u8[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+async function makeZip(entries){ // entries: [{path, blob}] stored without compression (audio is already compressed)
+  const enc=new TextEncoder(), parts=[], central=[]; let off=0;
+  for(const e of entries){ const data=new Uint8Array(await e.blob.arrayBuffer()), name=enc.encode(e.path), crc=crc32(data);
+    const lh=new DataView(new ArrayBuffer(30)); lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(8,0,true);
+    lh.setUint32(14,crc,true); lh.setUint32(18,data.length,true); lh.setUint32(22,data.length,true); lh.setUint16(26,name.length,true);
+    parts.push(lh.buffer,name,data);
+    const ch=new DataView(new ArrayBuffer(46)); ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true);
+    ch.setUint32(16,crc,true); ch.setUint32(20,data.length,true); ch.setUint32(24,data.length,true); ch.setUint16(28,name.length,true); ch.setUint32(42,off,true);
+    central.push(ch.buffer,name); off+=30+name.length+data.length; }
+  const cdSize=central.reduce((a,b)=>a+(b.byteLength||b.length),0), end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,entries.length,true); end.setUint16(10,entries.length,true); end.setUint32(12,cdSize,true); end.setUint32(16,off,true);
+  return new Blob([...parts,...central,end.buffer],{type:"application/zip"}); }
+async function readZip(file){ // returns [{path, blob}]; handles stored and deflated entries
+  const tailLen=Math.min(file.size,65557), tail=new DataView(await file.slice(file.size-tailLen).arrayBuffer());
+  let e=-1; for(let i=tailLen-22;i>=0;i--) if(tail.getUint32(i,true)===0x06054b50){ e=i; break; }
+  if(e<0) throw new Error("That file isn't a zip.");
+  const count=tail.getUint16(e+10,true), cdSize=tail.getUint32(e+12,true), cdOff=tail.getUint32(e+16,true);
+  const cd=new DataView(await file.slice(cdOff,cdOff+cdSize).arrayBuffer()), dec=new TextDecoder(), out=[]; let p=0;
+  for(let k=0;k<count;k++){ if(cd.getUint32(p,true)!==0x02014b50) break;
+    const method=cd.getUint16(p+10,true), csize=cd.getUint32(p+20,true), nlen=cd.getUint16(p+28,true), xlen=cd.getUint16(p+30,true), clen=cd.getUint16(p+32,true), loff=cd.getUint32(p+42,true);
+    const path=dec.decode(new Uint8Array(cd.buffer,cd.byteOffset+p+46,nlen)); p+=46+nlen+xlen+clen;
+    if(path.endsWith("/")) continue;
+    const lh=new DataView(await file.slice(loff,loff+30).arrayBuffer()), start=loff+30+lh.getUint16(26,true)+lh.getUint16(28,true);
+    let blob=file.slice(start,start+csize);
+    if(method===8){ if(typeof DecompressionStream==="undefined") throw new Error("This phone can't open compressed zips. Unzip it on the laptop first.");
+      blob=await new Response(blob.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob(); }
+    else if(method!==0) throw new Error("This zip uses a format Musicloop can't open.");
+    out.push({path,blob}); }
+  return out; }
+const AUDIO_RE=/\.(wav|wave|mp3|m4a|mp4|aac|flac|ogg|oga|opus|aif|aiff|wma)$/i;
+const MIME={mp3:"audio/mpeg",wav:"audio/wav",wave:"audio/wav",m4a:"audio/mp4",mp4:"audio/mp4",aac:"audio/aac",flac:"audio/flac",ogg:"audio/ogg",oga:"audio/ogg",opus:"audio/ogg",aif:"audio/aiff",aiff:"audio/aiff",wma:"audio/x-ms-wma"};
+const fileExt=n=>((/\.([a-z0-9]+)$/i.exec(n||"")||[])[1]||"").toLowerCase();
+const cleanName=n=>(n||"").replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g," ").trim().slice(0,60)||"Song";
+function stemName(file){ const b=file.replace(/^.*\//,"").replace(/\.[^.]+$/,""), l=b.toLowerCase();
+  const rules=[[/click|metronome/,"Click"],[/guide|cue/,"Guide"],[/bgv|backing|background|choir|harmon/,"BGVs"],[/pad|synth|ambient/,"Pad"],[/vocal|vox|lead|voice|sing/,"Vocals"],[/perc|shaker|tamb/,"Percussion"],
+    [/drum|kit|kick|snare/,"Drums"],[/bass/,"Bass"],[/acoustic|\bag\b/,"Acoustic gtr"],[/electric|\beg\b|\bgtr\b/,"Electric gtr"],[/guitar/,"Guitars"],
+    [/piano|key|rhodes|organ|wurl/,"Keys"],[/string/,"Strings"],[/other|instrumental|accomp|music/,"Other"]];
+  for(const [re,n] of rules) if(re.test(l)) return n; return b.slice(0,40)||"Part"; }
+function commonTitle(names){ if(!names.length) return "New song"; const bs=names.map(n=>n.replace(/^.*\//,"").replace(/\.[^.]+$/,""));
+  let pre=bs[0]; for(const b of bs) while(pre&&!b.startsWith(pre)) pre=pre.slice(0,-1);
+  pre=pre.replace(/[\s_\-–(]+$/,"").replace(/[_]+/g," ").trim(); return pre.length>=3?pre.slice(0,60):"New song"; }
+function songEntries(rec){ const folder=rec.id+"/", used=new Set();
+  const uniq=n=>{ let x=n, i=2; while(used.has(x)) x=n.replace(/(\.[^.]+)$/," "+(i++)+"$1"); used.add(x); return x; };
+  if(rec.kind==="ai") return (rec.stems||[]).map(st=>{ const ext=fileExt(st.file||"")||({"audio/mpeg":"mp3","audio/wav":"wav","audio/x-wav":"wav","audio/mp4":"m4a","audio/flac":"flac","audio/ogg":"ogg"})[st.blob.type]||"mp3";
+    return {path:folder+uniq(cleanName(st.name)+"."+ext),name:st.name,blob:st.blob}; });
+  const ext=rec.ext||extOf(rec.source&&rec.source.name,"mp3"); return [{path:folder+"source."+ext,name:"source",blob:rec.source}]; }
+async function sendToPhone(recs,set){ recs=recs.filter(Boolean); if(!recs.length){ toast("Add songs from your laptop's Songs to this setlist first."); return; }
+  toast(recs.length>1?`Packing ${recs.length} songs…`:"Packing the song…");
+  try{ const entries=[], songs=[];
+    for(const r of recs){ const es=songEntries(r); entries.push(...es);
+      songs.push({id:r.id,title:r.title,kind:r.kind,key:r.key||null,bpm:r.bpm||null,created:r.created,ext:r.ext||null,files:es.map(e=>({path:e.path,name:e.name}))}); }
+    const manifest={format:"musicloop",v:1,songs,set:set?{id:set.id,name:set.name,items:set.items.filter(it=>it.songId==="example"||recs.some(r=>r.id===it.songId))}:null};
+    entries.unshift({path:"musicloop.json",blob:new Blob([JSON.stringify(manifest,null,1)],{type:"application/json"})});
+    const zip=await makeZip(entries), name=cleanName(set?set.name+" (setlist)":recs[0].title)+" - Musicloop.zip";
+    if(inClaude){ const dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null;
+      if(!dl){ toast("Open the Musicloop webpage to send songs to your phone."); return; }
+      try{ await dl.save({filename:name,data:zip}); }catch(e){ if(e&&e.code!=="declined") toast("Couldn't save the file here. Use the Musicloop webpage instead."); } return; }
+    const a=document.createElement("a"); a.href=URL.createObjectURL(zip); a.download=name; document.body.append(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },20000);
+    toast(`Saved "${name}" to your Downloads. Copy it to your phone, then tap Import there.`);
+  }catch(e){ toast("Couldn't pack that song. Try again, or split it again first."); } }
+$("#setSend").addEventListener("click",()=>{ const set=activeSet(); sendToPhone([...new Set(set.items.map(it=>it.songId))].map(id=>records.find(r=>r.id===id)),set); });
+
+let pendingStems=null;
+function impLog(msg){ const el=$("#impLog"); el.hidden=!msg; el.textContent=msg||""; }
+async function saveImported(rec){ rec.updated=Date.now(); rec.uploaded=false; loaded.delete(rec.id);
+  await idb.put(rec); records=records.filter(r=>r.id!==rec.id); records.unshift(rec); markDirty("song:"+rec.id); }
+async function importPackage(entries){ const man=JSON.parse(await entries.find(e=>e.path==="musicloop.json").blob.text());
+  if(man.format!=="musicloop") throw new Error("That zip isn't a Musicloop song file.");
+  const byPath=new Map(entries.map(e=>[e.path,e.blob])), done=[];
+  for(const s of man.songs||[]){ const files=(s.files||[]).map(f=>({...f,blob:byPath.get(f.path)})).filter(f=>f.blob); if(!files.length) continue;
+    const rec={id:String(s.id||("s"+Date.now())).replace(/[^A-Za-z0-9_\-]/g,"").slice(0,40)||("s"+Date.now()),title:s.title||"Untitled song",kind:s.kind==="quick"?"quick":"ai",key:s.key||null,bpm:s.bpm||null,created:s.created||Date.now()};
+    if(rec.kind==="ai") rec.stems=await Promise.all(files.map(async f=>({name:f.name,file:f.path,blob:new Blob([await f.blob.arrayBuffer()],{type:MIME[fileExt(f.path)]||f.blob.type||""})})));
+    else { rec.source=new Blob([await files[0].blob.arrayBuffer()],{type:MIME[fileExt(files[0].path)]||""}); rec.ext=s.ext||fileExt(files[0].path)||"mp3"; }
+    await saveImported(rec); done.push(rec); }
+  if(man.set&&Array.isArray(man.set.items)){ const items=man.set.items.filter(it=>it&&(it.songId==="example"||records.some(r=>r.id===it.songId))).map(it=>({id:uid(),songId:it.songId,key:it.key||"",notes:it.notes||""}));
+    const x={id:uid(),name:man.set.name||"Imported setlist",items}; sets=sets.filter(z=>!z.seed); sets.push(x); activeSetId=x.id; saveSets(); renderSets(); }
+  return {songs:done.length,set:man.set?man.set.name:null}; }
+function showStemForm(files,title){ pendingStems=files.map(f=>({name:stemName(f.path),path:f.path,blob:f.blob})).sort((a,b)=>a.name.localeCompare(b.name));
+  $("#impTitle").value=title; $("#impKey").value=""; $("#impBpm").value=""; const box=$("#impParts"); box.innerHTML="";
+  pendingStems.forEach(st=>{ const row=document.createElement("div"); row.className="item"; row.innerHTML='<div class="t" style="cursor:default"><input class="pn" maxlength="40" aria-label="Part name" style="width:100%;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px"><small></small></div>';
+    row.querySelector(".pn").value=st.name; row.querySelector(".pn").addEventListener("input",e=>st.name=e.target.value.trim()||"Part"); row.querySelector("small").textContent=st.path.replace(/^.*\//,"")+" · "+(st.blob.size/1048576).toFixed(1)+" MB"; box.append(row); });
+  $("#impStems").hidden=false; $("#impStems").scrollIntoView({behavior:"smooth",block:"start"}); }
+$("#impCancel").addEventListener("click",()=>{ pendingStems=null; $("#impStems").hidden=true; });
+$("#impGo").addEventListener("click",async()=>{ if(!pendingStems) return; const b=$("#impGo"); b.disabled=true;
+  try{ const rec={id:"s"+Date.now(),title:$("#impTitle").value.trim()||"New song",kind:"ai",key:$("#impKey").value||null,bpm:Number($("#impBpm").value)||null,created:Date.now(),
+      stems:await Promise.all(pendingStems.map(async st=>({name:st.name,file:st.path,blob:new Blob([await st.blob.arrayBuffer()],{type:MIME[fileExt(st.path)]||st.blob.type||""})})))};
+    await saveImported(rec); renderSongs(); pendingStems=null; $("#impStems").hidden=true; impLog(`Imported "${rec.title}" with ${rec.stems.length} parts. It's in Songs.`); toast("Song imported");
+  }catch(e){ impLog("Couldn't save that song. The phone may be out of space."); }
+  b.disabled=false; });
+async function handleImport(fileList){ const files=[...(fileList||[])]; if(!files.length) return; impLog("Opening "+(files.length===1?files[0].name:files.length+" files")+"…");
+  let songs=0, setNames=[], loose=[], errors=[];
+  for(const f of files){ try{
+      if(/\.zip$/i.test(f.name)||f.type==="application/zip"||f.type==="application/x-zip-compressed"){ const entries=await readZip(f);
+        if(entries.some(e=>e.path==="musicloop.json")){ const r=await importPackage(entries); songs+=r.songs; if(r.set) setNames.push(r.set); }
+        else { const audio=entries.filter(e=>AUDIO_RE.test(e.path)&&!/(^|\/)(__MACOSX|\.)/.test(e.path)); if(!audio.length) throw new Error(`${f.name} has no audio files in it.`);
+          showStemForm(audio,commonTitle(audio.map(a=>a.path))===("New song")?cleanName(f.name.replace(/\.zip$/i,"").replace(/ - Musicloop$/,"")):commonTitle(audio.map(a=>a.path))); } }
+      else if(AUDIO_RE.test(f.name)||(f.type||"").startsWith("audio/")) loose.push({path:f.name,blob:f});
+      else errors.push(`${f.name} isn't a song file.`);
+    }catch(e){ errors.push(e.message||`Couldn't open ${f.name}.`); } }
+  if(loose.length) showStemForm(loose,commonTitle(loose.map(l=>l.path)));
+  renderSongs(); renderSetBar();
+  const bits=[]; if(songs) bits.push(`Imported ${songs} song${songs===1?"":"s"}${setNames.length?` and the setlist "${setNames.join('", "')}"`:""}. They're in Songs.`);
+  if(loose.length) bits.push("Check the song name and parts below, then tap Import song.");
+  impLog([...bits,...errors].join(" ")); if(songs) toast("Imported "+songs+" song"+(songs===1?"":"s")); }
+$("#impIn").addEventListener("change",e=>{ const fl=[...e.target.files]; e.target.value=""; handleImport(fl); });
+const idz=$("#impDrop"); ["dragenter","dragover"].forEach(ev=>idz.addEventListener(ev,e=>{ e.preventDefault(); e.stopPropagation(); idz.classList.add("over"); }));
+["dragleave","drop"].forEach(ev=>idz.addEventListener(ev,()=>idz.classList.remove("over")));
+idz.addEventListener("drop",e=>{ e.preventDefault(); e.stopPropagation(); handleImport(e.dataTransfer.files); });
+function applyDeviceMode(){
+  if(IS_PHONE){ document.querySelector('.nav button[data-v="split"]').hidden=true; document.querySelector('.nav button[data-v="import"]').hidden=false; }
+  else $("#setSend").hidden=false; }
+
+/* ---------- Boot ---------- */
+(async()=>{
+  applyDeviceMode();
+  loadSong(example);
+  const t=store.get("ml-tab"); if(t&&t!=="swap") showView(t);
+  if(await idb.open()){ records=(await idb.all()).sort((a,b)=>b.created-a.created); renderSongs(); }
+  renderSets(); renderSetBar();
+  initClaudeBoard();
+  if(inClaude){ $("#claudeNote").hidden=false; $("#authForm").querySelectorAll("input,button").forEach(el=>el.disabled=true); }
+  renderAcct(); await autoServer(); setStatus(false); showPhoneAddress();
+  if(inClaude) $("#srvFind").disabled=true;
+  if(server) testServer().then(ok=>{ setMode(mode); if(ok&&acct.token) syncNow(); });
+  setInterval(()=>{ if(acct.token&&document.visibilityState==="visible") syncNow(); else renderAcct(); },30000);
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&acct.token) syncNow(); });
+})();
+})();
+</script>
+</body>
+</html>
